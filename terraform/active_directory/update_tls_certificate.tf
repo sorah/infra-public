@@ -11,6 +11,8 @@ resource "aws_ssm_association" "update_tls_certificate" {
     values = ["ad-dc"]
   }
 
+  schedule_expression = "rate(1 day)"
+
   parameters = {
     commands         = data.local_file.update_tls_certificate_ps1.content
     workingDirectory = "C:\\"
