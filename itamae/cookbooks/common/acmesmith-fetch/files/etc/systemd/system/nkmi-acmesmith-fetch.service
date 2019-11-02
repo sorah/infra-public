@@ -1,0 +1,6 @@
+[Unit]
+Description=acmesmith-fetch
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/nkmi-acmesmith-fetch
