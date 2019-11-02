@@ -1,6 +1,6 @@
 node.reverse_merge!(
   vault_cert: {
-    vault_addr: 'https://vault.nkmi.me',
+    vault_addr: 'https://vault.nkmi.me:8200',
     token_file: '/root/.vault-token',
     certs: {
       # key: { pki:, role:, ca_file:, cert_file:, fullchain_file: key_file:, owner:, group:, mode:, sans:, cn:, ip:, units_to_reload:, units_to_restart:, threshold_days:, }
