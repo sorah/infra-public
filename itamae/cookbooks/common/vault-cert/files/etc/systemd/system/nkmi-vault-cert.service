@@ -1,0 +1,8 @@
+[Unit]
+Description=Retrieve certificates from Vault PKI
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/bin/nkmi-vault-cert
