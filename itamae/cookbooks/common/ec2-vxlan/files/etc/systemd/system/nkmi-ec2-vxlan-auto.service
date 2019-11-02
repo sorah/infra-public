@@ -1,0 +1,6 @@
+[Unit]
+Description=Ensure VXLAN interface and fdb up to date
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/nkmi-ec2-vxlan-auto

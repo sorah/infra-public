@@ -1,0 +1,284 @@
+#!/usr/bin/env ruby
+require 'aws-sdk-ec2'
+require 'open-uri'
+require 'shellwords'
+
+module Ec2Vxlan
+  class CommandFailed < StandardError; end
+
+  Member = Struct.new(:networks, :region, :instance, keyword_init: true) do
+    def outer_ip
+      return @outer_ip if defined? @outer_ip
+      @outer_ip = instance.tags.find { |_| _.key == 'VxlanOuter' }&.yield_self { |_| _.value.split(?/,2)[0] } || instance.private_ip_address
+    end
+  end
+  Membership = Struct.new(:name, :ifname, :regional, :id, :inner_ip, keyword_init: true)
+
+  class Environment
+    def parse_memberships(value, default_inner_ip: nil)
+      values = value.scan(/(\d+)(!?):([^=]+?)(?:=(.{1,11}?))?:(.+?)(?: +|\z)/)
+      if values.empty? && !value.empty? # Backward Compatibility
+        return [
+          Membership.new(
+            name: value,
+            ifname: "tun_ec2vxlan",
+            id: 10,
+            inner_ip: default_inner_ip&.call,
+          )
+        ]
+      end
+      values.map do |(id, regional, name, ifname, inner_ip)|
+        Membership.new(
+          name: name,
+          regional: regional == '!',
+          ifname: "vxl_#{ifname || name}",
+          id: id.to_i,
+          inner_ip: inner_ip,
+        )
+      end
+    end
+
+    def default_route
+      @default_route ||= IO.popen(%w(ip r get 8.8.8.8), 'r', &:read)
+    end
+
+    def outer_ifname
+      @outer_ifname ||= default_route.match(/dev ([^ ]+)/)&.to_a.fetch(1)
+    end
+
+    def default_gateway
+      @default_gateway ||= default_route.match(/via ([^ ]+)/)&.to_a.fetch(1)
+    end
+
+    def bird?
+      File.exist?('/etc/bird/bird.conf.d')
+    end
+
+    def region
+      @region ||= open('http://169.254.169.254/latest/meta-data/placement/availability-zone', &:read).chomp[0..-2]
+    end
+
+    def instance_id
+      @instance_id ||= open('http://169.254.169.254/latest/meta-data/instance-id', &:read).chomp
+    end
+
+    def ec2
+      @ec2 ||= Aws::EC2::Client.new(region: region)
+    end
+
+    def instance
+      @instance ||= ec2.describe_instances(
+        instance_ids: [instance_id]
+      ).reservations[0].instances[0]
+    end
+
+    def vxlan_tag
+      @vxlan_tag ||= instance.tags.find { |_| _.key == 'Vxlan' }&.value || ''
+    end
+
+    def vxlan_ip
+      @vxlan_ip ||= instance.tags.find { |_| _.key == 'VxlanIp' }&.value or raise "couldn't find VxlanIp tag for instance #{instance_id}"
+    end
+
+    def outer_ip
+      return @outer_ip if defined? @outer_ip
+      @outer_ip ||= instance.tags.find { |_| _.key == 'VxlanOuter' }&.value
+    end
+
+    def vxlan_tag_filter(region)
+      memberships.each_value.select do |_|
+        _.regional ? (region == self.region) : true
+      end.flat_map do |_| 
+        ["*:#{_.name}:*", "*:#{_.name}=*", _.name]
+      end
+    end
+
+    def regions
+      @regions ||= ec2.describe_regions.regions.map(&:region_name)
+    end
+
+    def members_by_network
+      @members_by_network ||= regions.map do |region|
+        Thread.new do
+          regional_ec2 = Aws::EC2::Client.new(region: region, credentials: ec2.config.credentials)
+          regional_ec2.describe_instances(
+            filters: [
+              {name: 'tag:Vxlan', values: vxlan_tag_filter(region)},
+            ]
+          ).flat_map(&:reservations).flat_map(&:instances).map do |instance|
+            tag = instance.tags.find { |_| _.key == 'Vxlan' }&.value || ''
+            networks = parse_memberships(tag).select do |_|
+              membership = memberships[_.name]
+              membership && (membership.regional ? (region == self.region) : true)
+            end
+            Member.new(
+              networks: networks.map(&:name),
+              region: region,
+              instance: instance,
+            )
+          end
+        end
+      end.flat_map(&:value).each.with_object({}) do |member, result|
+        member.networks.each do |network|
+          result[network] ||= []
+          result[network] << member
+        end
+      end
+    end
+
+    def memberships
+      @memberships ||= parse_memberships(vxlan_tag, default_inner_ip: method(:vxlan_ip)).map { |_| [_.name, _] }.to_h
+    end
+  end
+
+  class Engine
+    def initialize(env, membership)
+      @env = env
+      @membership = membership
+    end
+
+    attr_reader :env, :membership
+
+    def ifname
+      membership.ifname
+    end
+
+    def id
+      membership.id
+    end
+
+    def inner_ip
+      membership.inner_ip
+    end
+
+    def members
+      env.members_by_network[membership.name] || []
+    end
+
+    def mtu
+      return @mtu if defined? @mtu
+      outer_mtu = if membership.regional
+        IO.popen([*%w(ip -o link show dev), outer_ifname], 'r', &:read).match(/mtu (\d+) /)[1].to_i
+      else
+        # MTU of inter-region pcx is 1500, VXLAN overhead is 50
+        1500
+      end
+      @mtu = outer_mtu-50
+    end
+
+    def run()
+      ensure_outer_ip()
+      ensure_interface()
+      ensure_inner_ip()
+
+      maintain_forwarding_table()
+    end
+
+    def ensure_outer_ip
+      return unless env.outer_ip
+      return if IO.popen([*%w(ip -o a show dev), env.outer_ifname], 'r', &:read).include?("inet #{env.outer_ip}")
+      cmd(*%w(ip addr add), env.outer_ip, 'dev', env.outer_ifname)
+    end
+
+    def ensure_interface
+      return if File.exist?("/sys/class/net/#{ifname}")
+
+      local = env.outer_ip ? ['local', env.outer_ip.split(?/,2)[0]] : []
+      cmd(*%w(ip link add), ifname, *%w(type vxlan id), id.to_s, 'dev', env.outer_ifname, *local, 'dstport', '4789')
+      cmd(*%w(ip link set mtu), mtu.to_s, 'dev', ifname)
+      cmd(*%w(ip link set up dev), ifname)
+      puts "==> /proc/sys/net/ipv4/conf/#{ifname}/rp_filter = 2"
+      File.write "/proc/sys/net/ipv4/conf/#{ifname}/rp_filter", '2'
+      puts "==> /proc/sys/net/ipv4/conf/#{ifname}/forwarding = 1"
+      File.write "/proc/sys/net/ipv4/conf/#{ifname}/forwarding", '1'
+      puts "==> /proc/sys/net/ipv6/conf/#{ifname}/forwarding = 1"
+      File.write "/proc/sys/net/ipv6/conf/#{ifname}/forwarding", '1'
+    end
+
+    def ensure_inner_ip
+      return unless IO.popen([*%w(ip -o a show dev), ifname], 'r', &:read).each_line.grep(/inet /).empty?
+      cmd(*%w(ip addr add), inner_ip, 'dev', ifname, 'scope', 'link')
+    end
+
+    def maintain_forwarding_table
+      fdb = IO.popen([*%w(bridge fdb show dev), ifname], 'r', &:read).each_line.map do |l|
+        m = l.chomp.match(/^(00:00:00:00:00:00) .*dst ([^ ]+)/)
+        next nil unless m
+        [m[2], m[1]]
+      end.compact.to_h
+
+      fdb_to_retain = {env.outer_ip => true, '127.0.0.1' => true}
+      members.each do |member|
+        peer_ip = member.outer_ip
+        next unless peer_ip # in case of termination
+        next if member.instance.private_ip_address == env.instance.private_ip_address
+
+        unless fdb[peer_ip]
+          cmd(*%w(ip route add), "#{peer_ip}/32", 'via', default_gateway) unless env.bird?
+          cmd(*%w(bridge fdb append to 00:00:00:00:00:00 dst), peer_ip, 'dev', ifname)
+        end
+        fdb_to_retain[peer_ip] = true
+      end
+
+      fdb.each do |ip, _|
+        next if fdb_to_retain[ip]
+        cmd(*%w(ip route del), "#{ip}/32", 'via', default_gateway) unless env.bird?
+        cmd(*%w(bridge fdb del 00:00:00:00:00:00 dst), ip, 'dev', ifname)
+      end
+    end
+
+    def peer_ips
+      @peer_ips ||= members.reject { |_| _.instance.private_ip_address == env.instance.private_ip_address }.map(&:outer_ip)
+    end
+
+    private
+
+    def cmd(*args)
+      puts "  * #{args.shelljoin}"
+      system(*args) or raise CommandFailed
+    end
+  end
+
+  def self.maintain_bird_peer_routes(env, engines)
+    return unless env.bird?
+
+    bird_conf_path = '/etc/bird/bird.conf.d/ec2-vxlan-peers.conf'
+    current_bird_conf = File.exist?(bird_conf_path) ? File.read(bird_conf_path) : nil
+
+    route_specs = engines.flat_map(&:peer_ips).uniq.map do |_|
+      <<-EOF
+  route #{_}/32 via #{env.default_gateway};
+      EOF
+    end
+
+    bird_conf =  <<-EOF
+protocol static static_ec2_vxlan_peers {
+  ipv4 {
+    table t4_kernel;
+  };
+#{route_specs.join(?\n)}
+}
+
+    EOF
+
+    if current_bird_conf != bird_conf
+      File.write bird_conf_path, bird_conf
+      puts "===> birdc configure"
+      system "birdc", "configure", exception: true
+    end
+  end
+
+  def self.run
+    env = Environment.new
+    engines = env.memberships.each_value.map do |_| 
+      Engine.new(env, _)
+    end
+    engines.each do |_|
+      puts "==> #{_.membership.name} (id=#{_.membership.id}, ifname=#{_.membership.ifname}, inner_ip=#{_.membership.inner_ip})"
+      _.run()
+    end
+    maintain_bird_peer_routes(env, engines)
+  end
+end
+
+Ec2Vxlan.run
