@@ -1,0 +1,15 @@
+[Unit]
+Description=Prometheus SNMP Exporter
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=nobody
+Group=nogroup
+Restart=always
+RestartSec=6s
+ExecStart=/opt/snmp_exporter/snmp_exporter --config.file="/etc/prometheus/snmp.yml"
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,387 @@
+modules:
+  # Default IF-MIB interfaces table with ifIndex.
+  if_mib:
+    auth:
+      community: __SNMP_COMMUNITY__
+    walk: [sysUpTime, interfaces, ifXTable]
+    lookups:
+      - source_indexes: [ifIndex]
+        lookup: ifAlias
+      - source_indexes: [ifIndex]
+        lookup: ifDescr
+      - source_indexes: [ifIndex]
+        # Use OID to avoid conflict with Netscaler NS-ROOT-MIB.
+        lookup: 1.3.6.1.2.1.31.1.1.1.1 # ifName
+    overrides:
+      ifType:
+        type: EnumAsInfo
+
+# Cisco Wireless LAN Controller
+  cisco_wlc:
+    auth:
+      community: __SNMP_COMMUNITY__
+    walk:
+      - interfaces
+      - ifXTable
+      - 1.3.6.1.4.1.14179.2.1.1.1.38   # bsnDot11EssNumberofMobileStations
+      - 1.3.6.1.4.1.14179.2.2.2.1.4    # bsnAPIfPhyChannelNumber
+      - 1.3.6.1.4.1.14179.2.2.2.1.6    # power level
+      - 1.3.6.1.4.1.14179.2.2.2.1.3 # bsnAPIfPhyChannelAssignment
+      -     1.3.6.1.4.1.14179.2.2.2.1.5 # bsnAPIfPhyTxPowerControl
+      - 1.3.6.1.4.1.14179.2.2.2.1.15   # bsnApIfNoOfUsers
+      - 1.3.6.1.4.1.14179.2.2.6.1      # bsnAPIfDot11CountersTable
+      - 1.3.6.1.4.1.14179.2.2.13.1.3   # bsnAPIfLoadChannelUtilization
+      - 1.3.6.1.4.1.14179.2.2.15.1.21  # bsnAPIfDBNoisePower
+    lookups:
+      - source_indexes: [bsnDot11EssIndex]
+        lookup: bsnDot11EssSsid
+        drop_source_indexes: true
+      - source_indexes: [bsnAPDot3MacAddress]
+        lookup: bsnAPName
+        drop_source_indexes: true
+      - source_indexes: [bsnAPDot3MacAddress, bsnAPIfSlotId]
+        lookup: bsnAPIfType
+        drop_source_indexes: false
+    overrides:
+      bsnAPIfType:
+        type: EnumAsInfo
+      ifType:
+        type: EnumAsInfo
+      bsnAPName:
+        type: DisplayString
+
+
+# APC/Schneider UPS Network Management Cards
+#
+# Note: older management cards only support SNMP v1 (AP9606 and
+# AP9607, possibly others). Older versions of the firmware may only
+# support v1 as well. If you only have newer cards you can switch to
+# version v2c or v3.
+#
+# The management cards have relatively slow processors so don't poll
+# very often and give a generous timeout to prevent spurious
+# errors. Alternatively you can eliminate the interface polling (OIDs
+# beginning with 1.3.6.1.2.1) to reduce the time taken for polling.
+#
+# MIB: https://download.schneider-electric.com/files?p_File_Name=powernet426.mib
+# Guide: http://www.apc.com/salestools/ASTE-6Z5QEY/ASTE-6Z5QEY_R0_EN.pdf
+# Download site: http://www.apc.com/us/en/tools/download/index.cfm
+  apcups:
+    auth:
+      community: __SNMP_COMMUNITY__
+    version: 1
+    walk:
+      - sysUpTime
+      - interfaces
+      - 1.3.6.1.4.1.318.1.1.1.2       # upsBattery
+      - 1.3.6.1.4.1.318.1.1.1.3       # upsInput
+      - 1.3.6.1.4.1.318.1.1.1.4       # upsOutput
+      - 1.3.6.1.4.1.318.1.1.1.7.2     # upsAdvTest
+      - 1.3.6.1.4.1.318.1.1.1.8.1     # upsCommStatus
+      - 1.3.6.1.4.1.318.1.1.1.12      # upsOutletGroups
+      - 1.3.6.1.4.1.318.1.1.10.2.3.2  # iemStatusProbesTable
+      - 1.3.6.1.4.1.318.1.1.26.8.3    # rPDU2BankStatusTable
+    lookups:
+      - source_indexes: [upsOutletGroupStatusIndex]
+        lookup: upsOutletGroupStatusName
+        drop_source_indexes: true
+      - source_indexes: [iemStatusProbeIndex]
+        lookup: iemStatusProbeName
+        drop_source_indexes: true
+    overrides:
+      ifType:
+        type: EnumAsInfo
+      rPDU2BankStatusLoadState:
+        type: EnumAsStateSet
+      upsAdvBatteryCondition:
+        type: EnumAsStateSet
+      upsAdvBatteryChargingCurrentRestricted:
+        type: EnumAsStateSet
+      upsAdvBatteryChargerStatus:
+        type: EnumAsStateSet
+
+# ServerTech Sentry 3 MIB
+#
+# Used by ServerTech PDUs
+#
+# ftp://ftp.servertech.com/Pub/SNMP/sentry3/Sentry3OIDTree.txt
+# ftp://ftp.servertech.com/Pub/SNMP/sentry3/Sentry3.mib
+  servertech_sentry3:
+    auth:
+      community: __SNMP_COMMUNITY__
+    walk:
+      - sysUpTime
+      - 1.3.6.1.4.1.1718.3.2.2  # infeedTable
+      - 1.3.6.1.4.1.1718.3.2.3  # outletTable
+    overrides:
+      infeedCapacityUsed:
+        ignore: true  # Composite metric: infeedLoadValue / infeedCapacity * 100
+      infeedVACapacityUsed:
+        ignore: true  # Composite metric: infeedApparentPower / infeedVACapacity * 100
+
+# Palo Alto Firewalls
+#
+# Palo Alto MIBs can be found here:
+# https://www.paloaltonetworks.com/documentation/misc/snmp-mibs.html
+#
+# PanOS 7.0 enterprise MIBs:
+# https://www.paloaltonetworks.com/content/dam/pan/en_US/assets/zip/technical-documentation/snmp-mib-modules/PAN-MIB-MODULES-7.0.zip
+#
+# Tested on a Palo Alto Networks PA-3020 series firewall
+#
+  paloalto_fw:
+    auth:
+      community: __SNMP_COMMUNITY__
+    walk:
+      - sysUpTime
+      - interfaces
+      - hrDevice
+      - hrSystem
+      - hrStorage
+      - 1.3.6.1.4.1.25461.2.1.2.1 # panSys
+      - 1.3.6.1.4.1.25461.2.1.2.3 # panSession
+      - 1.3.6.1.4.1.25461.2.1.2.5 # panGlobalProtect
+
+# Arista Networks
+#
+# Arista Networks MIBs can be found here: https://www.arista.com/en/support/product-documentation/arista-snmp-mibs
+#
+# https://www.arista.com/assets/data/docs/MIBS/ARISTA-ENTITY-SENSOR-MIB.txt
+# https://www.arista.com/assets/data/docs/MIBS/ARISTA-SW-IP-FORWARDING-MIB.txt
+#
+# Tested on Arista DCS-7010T-48 switch
+#
+  arista_sw:
+    auth:
+      community: __SNMP_COMMUNITY__
+    walk:
+      - sysUpTime
+      - interfaces
+      - ifXTable
+      - 1.3.6.1.2.1.25.3.3.1.2 # hrProcessorLoad
+      - 1.3.6.1.2.1.25.2.3.1.6 # hrStorageUsed
+      - 1.3.6.1.4.1.30065.3.1.1 # aristaSwFwdIp
+    overrides:
+      ifType:
+        type: EnumAsInfo
+
+# Synology
+#
+# Synology MIBs can be found here:
+#   http://www.synology.com/support/snmp_mib.php
+#   http://dedl.synology.com/download/Document/MIBGuide/Synology_MIB_File.zip
+#
+# Tested on RS2414rp+ NAS
+#
+  synology:
+    auth:
+      community: __SNMP_COMMUNITY__
+    walk:
+      - interfaces
+      - sysUpTime
+      - ifXTable
+      - laNames
+      - laLoadInt
+      - ssCpuUser
+      - ssCpuSystem
+      - ssCpuIdle
+      - memory
+      - hrStorage
+      - 1.3.6.1.4.1.6574.1       # synoSystem
+      - 1.3.6.1.4.1.6574.2       # synoDisk
+      - 1.3.6.1.4.1.6574.3       # synoRaid
+      - 1.3.6.1.4.1.6574.4       # synoUPS
+      - 1.3.6.1.4.1.6574.5       # synologyDiskSMART
+      - 1.3.6.1.4.1.6574.6       # synologyService
+      - 1.3.6.1.4.1.6574.101     # storageIO
+      - 1.3.6.1.4.1.6574.102     # spaceIO
+      - 1.3.6.1.4.1.6574.104     # synologyiSCSILUN
+    lookups:
+      - source_indexes: [spaceIOIndex]
+        lookup: spaceIODevice
+        drop_source_indexes: true
+      - source_indexes: [storageIOIndex]
+        lookup: storageIODevice
+        drop_source_indexes: true
+      - source_indexes: [serviceInfoIndex]
+        lookup: serviceName
+        drop_source_indexes: true
+      - source_indexes: [ifIndex]
+        # Use OID to avoid conflict with Netscaler NS-ROOT-MIB.
+        lookup: 1.3.6.1.2.1.31.1.1.1.1 # ifName
+        drop_source_indexes: true
+      - source_indexes: [diskIndex]
+        lookup: diskID
+        drop_source_indexes: true
+      - source_indexes: [raidIndex]
+        lookup: raidName
+        drop_source_indexes: true
+      - source_indexes: [laIndex]
+        lookup: laNames
+        drop_source_indexes: true
+      - source_indexes: [hrStorageIndex]
+        lookup: hrStorageDescr
+        drop_source_indexes: true
+    overrides:
+      ifType:
+        type: EnumAsInfo
+
+# DD-WRT
+#
+# The list of SNMP OIDs to care about for DD-WRT can be found here: https://www.dd-wrt.com/wiki/index.php/SNMP#Known_OID.C2.B4s_via_SNMP
+#
+# Tested on  DD-WRT v3.0-r31825 (04/06/17) with an ASUS RT-AC66U
+#
+  ddwrt:
+    auth:
+      community: __SNMP_COMMUNITY__
+    walk:
+      - sysUpTime
+      - interfaces
+      - ifXTable
+      - 1.3.6.1.2.1.25.2 # hrStorage
+      - 1.3.6.1.4.1.2021.4 # memory
+      - 1.3.6.1.4.1.2021.10.1.1 # laIndex
+      - 1.3.6.1.4.1.2021.10.1.2 # laNames
+      - 1.3.6.1.4.1.2021.10.1.5 # laLoadInt
+      - 1.3.6.1.4.1.2021.11 # systemStats
+    lookups:
+    - source_indexes: [ifIndex]
+      lookup: ifDescr
+      drop_source_indexes: true
+    - source_indexes: [laIndex]
+      lookup: laNames
+      drop_source_indexes: true
+    - source_indexes: [hrStorageIndex]
+      lookup: hrStorageDescr
+      drop_source_indexes: true
+    overrides:
+      ifType:
+        type: EnumAsInfo
+
+# Ubiquiti / AirMAX
+#
+# https://dl.ubnt.com/firmwares/airos-ubnt-mib/ubnt-mib.zip
+#
+  ubiquiti_airmax:
+    auth:
+      community: __SNMP_COMMUNITY__
+    version: 1
+    walk:
+      - sysUpTime
+      - interfaces
+      - ifXTable
+      - 1.3.6.1.4.1.41112.1.4 # ubntAirMAX
+    overrides:
+      ifType:
+        type: EnumAsInfo
+
+# Ubiquiti / UniFi
+#
+# http://dl.ubnt-ut.com/snmp/UBNT-MIB
+# http://dl.ubnt-ut.com/snmp/UBNT-UniFi-MIB
+#
+  ubiquiti_unifi:
+    auth:
+      community: __SNMP_COMMUNITY__
+    walk:
+      - sysUpTime
+      - interfaces
+      - ifXTable
+      - 1.3.6.1.4.1.41112.1.6 # ubntUniFi
+    overrides:
+      ifType:
+        type: EnumAsInfo
+
+# keepalived
+#
+# https://github.com/acassen/keepalived/blob/master/doc/KEEPALIVED-MIB.txt
+  keepalived:
+    walk:
+      - vrrpInstanceTable # Table of VRRP instances.
+      - vrrpSyncGroupTable # Table of sync groups.
+      - virtualServerGroupTable # Table of virtual server groups.
+      - virtualServerTable # Table of virtual servers.
+      - realServerTable # Table of real servers. This includes regular real servers and sorry servers.
+    overrides:
+      vrrpSyncGroupScriptMaster:
+        ignore: true # Non-metric display string.
+      vrrpSyncGroupScriptBackup:
+        ignore: true # Non-metric display string.
+      vrrpSyncGroupScriptFault:
+        ignore: true # Non-metric display string.
+      vrrpSyncGroupScript:
+        ignore: true # Non-metric display string.
+      vrrpSyncGroupScriptStop:
+        ignore: true # Non-metric display string.
+      vrrpInstanceLvsSyncDaemon:
+        ignore: true # Deprecated.
+      vrrpInstanceLvsSyncInterface:
+        ignore: true # Deprecated.
+      vrrpInstanceScriptMaster:
+        ignore: true # Non-metric display string.
+      vrrpInstanceScriptBackup:
+        ignore: true # Non-metric display string.
+      vrrpInstanceScriptFault:
+        ignore: true # Non-metric display string.
+      vrrpInstanceScriptStop:
+        ignore: true # Non-metric display string.
+      vrrpInstanceScript:
+        ignore: true # Non-metric display string.
+      vrrpInstanceScriptMstrRxLowerPri:
+        ignore: true # Non-metric display string.
+
+# Printer: RFC 3805
+#
+# https://tools.ietf.org/html/rfc3805
+# https://www.iana.org/assignments/ianaprinter-mib/ianaprinter-mib.xhtml
+  printer_mib:
+    walk:
+      - sysUpTime
+      - hrPrinterStatus
+      - prtGeneralReset
+      - prtConsoleDisable
+      - prtGeneralPrinterName
+      - prtGeneralSerialNumber
+      - prtAlertCriticalEvents
+      - prtAlertAllEvents
+      - prtCoverStatus
+      - prtMarkerSuppliesDescription
+      - prtMarkerSuppliesLevel
+      - prtMarkerSuppliesMaxCapacity
+      - prtMarkerSuppliesType
+    lookups:
+      - source_indexes: [hrDeviceIndex, prtMarkerSuppliesIndex]
+        lookup: prtMarkerSuppliesType
+    overrides:
+      hrPrinterStatus:
+        type: EnumAsStateSet
+      prtGeneralReset:
+        type: EnumAsStateSet
+      prtConsoleDisable:
+        type: EnumAsStateSet
+      prtGeneralPrinterName:
+        type: DisplayString
+      prtGeneralSerialNumber:
+        type: DisplayString
+      prtCoverStatus:
+        type: EnumAsStateSet
+      prtMarkerSuppliesDescription:
+        type: DisplayString
+
+# NEC IX Router
+#
+# https://jpn.nec.com/univerge/ix/Manual/MIB/PICO-SMI-MIB.txt
+# https://jpn.nec.com/univerge/ix/Manual/MIB/PICO-SMI-ID-MIB.txt
+# https://jpn.nec.com/univerge/ix/Manual/MIB/PICO-IPSEC-FLOW-MONITOR-MIB.txt
+  nec_ix:
+    walk:
+      - picoSystem
+      - picoIpSecFlowMonitorMIB
+      - picoExtIfMIB
+      - picoNetworkMonitorMIB
+      - picoIsdnMIB
+      - picoNgnMIB
+      - picoMobileMIB
+      - picoIPv4MIB
+      - picoIPv6MIB
