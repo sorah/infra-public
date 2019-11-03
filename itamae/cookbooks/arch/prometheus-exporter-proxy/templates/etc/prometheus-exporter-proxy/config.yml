@@ -1,0 +1,5 @@
+<%= {
+  #    error_log: {path: '/var/log/prometheus-exporter-proxy/error.log'},
+    listen: node[:prometheus][:exporter_proxy].fetch(:listen),
+    exporters: node[:prometheus][:exporter_proxy].fetch(:exporters),
+}.to_json %>

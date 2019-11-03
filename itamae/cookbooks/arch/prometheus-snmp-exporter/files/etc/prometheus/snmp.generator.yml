@@ -297,6 +297,8 @@ modules:
 #
 # https://github.com/acassen/keepalived/blob/master/doc/KEEPALIVED-MIB.txt
   keepalived:
+    auth:
+      community: __SNMP_COMMUNITY__
     walk:
       - vrrpInstanceTable # Table of VRRP instances.
       - vrrpSyncGroupTable # Table of sync groups.
@@ -336,6 +338,8 @@ modules:
 # https://tools.ietf.org/html/rfc3805
 # https://www.iana.org/assignments/ianaprinter-mib/ianaprinter-mib.xhtml
   printer_mib:
+    auth:
+      community: __SNMP_COMMUNITY__
     walk:
       - sysUpTime
       - hrPrinterStatus
@@ -375,6 +379,8 @@ modules:
 # https://jpn.nec.com/univerge/ix/Manual/MIB/PICO-SMI-ID-MIB.txt
 # https://jpn.nec.com/univerge/ix/Manual/MIB/PICO-IPSEC-FLOW-MONITOR-MIB.txt
   nec_ix:
+    auth:
+      community: __SNMP_COMMUNITY__
     walk:
       - picoSystem
       - picoIpSecFlowMonitorMIB

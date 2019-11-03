@@ -2,7 +2,7 @@ node.reverse_merge!(
   prometheus: {
     snmp_exporter: {
       use_cookbook_config: true,
-      community: node.fetch(:snmp_community),
+      community: node[:secrets].fetch(:snmp_community),
     },
   },
 )
