@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+env = {
+  'VAULT_ADDR' => 'https://vault.nkmi.me:8200',
+}
+
+Dir['/etc/nkmi-vault-renew.d/*'].each do |path|
+  unless system(env.merge('VAULT_TOKEN' => File.read(path).chomp), 'vault', 'token-renew', out: File::NULL)
+    raise "token-renew failed at #{path.inspect}"
+  end
+end

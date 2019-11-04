@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew periodic tokens
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/bin/nkmi-vault-renew
