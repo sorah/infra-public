@@ -6,8 +6,9 @@ require 'fileutils'
 config = JSON.parse(File.read('/etc/nkmi-vault-cert.json'), symbolize_names: true)
 
 ENV['VAULT_ADDR'] ||= config[:vault_addr]
-ENV['VAULT_TOKEN'] ||= File.read(config[:token_file]).chomp
-
+unless ENV['VAULT_TOKEN']
+  ENV['VAULT_TOKEN'] = File.read(config.fetch(:token_file)).chomp
+end
 
 units_to_reload = []
 units_to_restart = []
@@ -65,8 +66,8 @@ config.fetch(:certs).each do |k, cert|
 
   puts " * #{k}: serial=#{data.fetch(:serial_number)}"
 
-  units_to_reload.push *cert.fetch(:units_to_reload, [])
-  units_to_restart.push *cert.fetch(:units_to_restart, [])
+  units_to_reload.push(*cert.fetch(:units_to_reload, []))
+  units_to_restart.push(*cert.fetch(:units_to_restart, []))
 end
 
 puts "=> Notifying updates"

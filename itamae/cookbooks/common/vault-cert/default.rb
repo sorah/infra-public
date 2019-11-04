@@ -2,6 +2,7 @@ node.reverse_merge!(
   vault_cert: {
     vault_addr: 'https://vault.nkmi.me:8200',
     token_file: '/root/.vault-token',
+    env_file: nil,
     certs: {
       # key: { pki:, role:, ca_file:, cert_file:, fullchain_file: key_file:, owner:, group:, mode:, sans:, cn:, ip:, units_to_reload:, units_to_restart:, threshold_days:, }
     },
@@ -23,7 +24,7 @@ remote_file '/usr/bin/nkmi-vault-cert' do
   mode  '0755'
 end
 
-remote_file '/etc/systemd/system/nkmi-vault-cert.service' do
+template '/etc/systemd/system/nkmi-vault-cert.service' do
   owner 'root'
   group 'root'
   mode  '0644'
