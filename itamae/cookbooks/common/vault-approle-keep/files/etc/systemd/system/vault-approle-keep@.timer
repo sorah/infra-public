@@ -1,0 +1,10 @@
+[Unit]
+Description=periodically run vault-approle-keep-auto
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=90m
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target

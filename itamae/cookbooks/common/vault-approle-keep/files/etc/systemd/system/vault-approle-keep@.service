@@ -1,0 +1,10 @@
+[Unit]
+Description=Renew stored vault_token
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/bin/vault-approle-keep-auto %i
+ProtectSystem=strict
+ReadWritePaths=/var/lib/vault-approle-keep

@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+require 'io/console'
+require 'json'
+require 'fileutils'
+
+name = ARGV[0]
+config_path = "/etc/vault-approle-keep/#{name}.json"
+raise "#{name.inspect} not configured" unless File.exist?(config_path)
+config = JSON.parse(File.read(config_path), symbolize_names: true)
+
+print 'wrapping_token: ' if $stdin.tty?
+token = $stdin.gets.chomp
+
+ENV['VAULT_ADDR'] = config.fetch(:vault_addr)
+ENV['VAULT_TOKEN'] = token
+unwrap_result_json = IO.popen(%w(vault unwrap -format=json), 'r', &:read)
+raise "Failed to unwrap" unless $?.success?
+unwrap_result = JSON.parse(unwrap_result_json)
+secret_id = unwrap_result.dig('data', 'secret_id')
+raise "No secret_id in the unwrapped result" unless secret_id
+
+login_json = IO.popen(['vault', 'write', '-format=json', config.fetch(:login_path), "role_id=#{config.fetch(:role_id)}", "secret_id=-"], 'r+') do |io|
+  io.print secret_id
+  io.close_write
+  io.read
+end
+raise "Failed to login" unless $?.success?
+login = JSON.parse(login_json)
+
+token = login.dig('auth', 'client_token')
+
+new_path = "/var/lib/vault-approle-keep/.#{name}.new"
+begin
+  path = "/var/lib/vault-approle-keep/#{name}"
+  File.open(new_path, 'w', 0640) do |io|
+    io.puts "VAULT_ADDR=#{ENV['VAULT_ADDR']}"
+    io.puts "VAULT_TOKEN=#{token}"
+  end
+  FileUtils.chown(config.fetch(:owner, 'root'), config.fetch(:group, 'root'), new_path)
+  File.rename(new_path, path)
+ensure
+  File.unlink(new_path) if File.exist?(new_path)
+end
+
+ENV['VAULT_TOKEN'] = token
+lookup_json = IO.popen(%w(vault token lookup -format=json), 'r', &:read)
+raise "Failed to lookup" unless $?.success?
+lookup = JSON.parse(lookup_json)
+
+puts "#{name.inspect}: expires #{lookup.dig('data', 'expire_time')}"

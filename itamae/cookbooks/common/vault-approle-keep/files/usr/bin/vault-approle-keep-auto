@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+require 'json'
+require 'fileutils'
+
+name = ARGV[0]
+config_path = "/etc/vault-approle-keep/#{name}.json"
+raise "#{name.inspect} not configured" unless File.exist?(config_path)
+config = JSON.parse(File.read(config_path), symbolize_names: true)
+
+path = "/var/lib/vault-approle-keep/#{name}"
+raise "#{name.inspect} still has no token - run: vault-approle-keep-feed #{name.inspect}" unless File.exist?(path)
+
+ENV['VAULT_ADDR'] = config.fetch(:vault_addr)
+ENV['VAULT_TOKEN'] = File.read(path).match(/^VAULT_TOKEN=(.+)$/)[1]
+token_json = IO.popen(%w(vault token renew -format=json), 'r', &:read)
+raise "Failed to renew" unless $?.success?
+token = JSON.parse(token_json)
+
+puts "#{name.inspect}: expires #{Time.now + token.dig('auth', 'lease_duration')}"
+
+##
+
+new_path = "/var/lib/vault-approle-keep/.#{name}.new"
+begin
+  File.open(new_path, 'w', 0640) do |io|
+    io.puts "VAULT_ADDR=#{ENV['VAULT_ADDR']}"
+    io.puts "VAULT_TOKEN=#{token.dig('auth', 'client_token')}"
+  end
+  FileUtils.chown(config.fetch(:owner, 'root'), config.fetch(:group, 'root'), new_path)
+  File.rename(new_path, path)
+ensure
+  File.unlink(new_path) if File.exist?(new_path)
+end
