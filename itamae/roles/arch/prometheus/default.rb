@@ -31,4 +31,4 @@ service 'prometheus.service' do
   action [:enable, :start]
 end
 
-#include_role 'grafana'
+include_role 'grafana' # XXX:
