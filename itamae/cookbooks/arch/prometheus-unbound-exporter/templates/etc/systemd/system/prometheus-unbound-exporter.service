@@ -1,0 +1,19 @@
+[Unit]
+Description=Prometheus Unbound Exporter
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+MemoryLimit=50M
+Restart=always
+RestartSec=6s
+ExecStart=/opt/unbound_exporter \
+  -unbound.ca /etc/unbound/unbound_server.pem \
+  -unbound.cert /etc/unbound/unbound_control.pem \
+  -unbound.key /etc/unbound/unbound_control.key \
+  -unbound.host localhost:8953
+LogsDirectory=prometheus-exporter-proxy
+
+[Install]
+WantedBy=multi-user.target
