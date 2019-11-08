@@ -158,7 +158,7 @@ module Ec2Vxlan
     def mtu
       return @mtu if defined? @mtu
       outer_mtu = if membership.regional
-        IO.popen([*%w(ip -o link show dev), outer_ifname], 'r', &:read).match(/mtu (\d+) /)[1].to_i
+        IO.popen([*%w(ip -o link show dev), env.outer_ifname], 'r', &:read).match(/mtu (\d+) /)[1].to_i
       else
         # MTU of inter-region pcx is 1500, VXLAN overhead is 50
         1500
