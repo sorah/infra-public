@@ -43,8 +43,8 @@ Write-Output $intermediate
 Write-Output $cert
 
 # RDP
-$rdp_wmi = (Get-WmiObject -class "Win32_TSGeneralSetting" -Namespace root\cimv2\terminalservices -Filter "TerminalName='RDP-tcp'").__path
-Set-WmiInstance -Path $rdp_wmi -Argument @{SSLCertificateSHA1Hash=$cert.Thumbprint}
+# $rdp_wmi = (Get-WmiObject -class "Win32_TSGeneralSetting" -Namespace root\cimv2\terminalservices -Filter "TerminalName='RDP-tcp'").__path
+# Set-WmiInstance -Path $rdp_wmi -Argument @{SSLCertificateSHA1Hash=$cert.Thumbprint}
 
 # LDAP
 $reload_ldif_path = New-TemporaryFile
