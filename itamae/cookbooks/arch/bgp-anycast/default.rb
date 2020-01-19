@@ -1,7 +1,9 @@
+include_cookbook 'default-route-info'
+
 node.reverse_merge!(
   bgp_anycast: {
     # asn: 65xxx,
-    # router_id:
+    router_id: node[:default_route].fetch(:src),
     # services: {
     #   svc: {
     #     command: '',
