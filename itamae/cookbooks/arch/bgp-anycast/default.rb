@@ -27,7 +27,12 @@ node.reverse_merge!(
   }
 )
 
-include_recipe './ec2.rb' if node[:hocho_ec2]
+case
+when node[:hocho_ec2]
+  include_recipe './ec2'
+when node[:bgp_anycast][:ospf]
+  include_recipe './ospf'
+end
 
 include_cookbook 'exabgp'
 
@@ -53,4 +58,3 @@ end
 service 'exabgp' do
   action [:enable, :start]
 end
-
