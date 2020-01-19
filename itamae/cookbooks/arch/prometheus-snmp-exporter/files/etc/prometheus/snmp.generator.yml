@@ -391,3 +391,67 @@ modules:
       - picoMobileMIB
       - picoIPv4MIB
       - picoIPv6MIB
+
+  bgp4:
+    auth:
+      community: __SNMP_COMMUNITY__
+    walk:
+      - bgpPeerState
+      - bgpPeerInUpdates
+      - bgpPeerOutUpdates
+      - bgpPeerInTotalMessages
+      - bgpPeerOutTotalMessages
+
+  #ip_forward:
+  #  auth:
+  #    community: __SNMP_COMMUNITY__
+  #  walk:
+  #    - inetCidrRouteNumber
+
+  ospf:
+    auth:
+      community: __SNMP_COMMUNITY__
+    walk:
+      - ospfNbrState
+      - ospfNbrEvents
+    lookups:
+      - source_indexes: [ospfNbrIpAddr]
+        lookup: ospfNbrRtrId
+      - source_indexes: [ospfNbrAddressLessIndex]
+        lookup: ospfNbrRtrId
+
+  juniper_os:
+    auth:
+      community: __SNMP_COMMUNITY__
+    walk:
+      - jnxOperatingState
+      - jnxOperatingTemp
+      - jnxOperatingCPU
+      - jnxOperatingISR
+      - jnxOperatingDRAMSize
+      - jnxOperatingBuffer
+      - jnxOperatingHeap
+      - jnxOperatingLastRestart
+      - jnxOperatingMemory
+      - jnxOperatingStateOrdered
+      - jnxOperatingRestartTime
+      - jnxOperating1MinLoadAvg
+      - jnxOperating5MinLoadAvg
+      - jnxOperating15MinLoadAvg
+      - jnxOperating1MinAvgCPU
+      - jnxOperating5MinAvgCPU
+      - jnxOperating15MinAvgCPU
+      - jnxOperatingFRUPower
+      - jnxOperatingBufferCP
+      - jnxOperatingMemoryCP
+      - jnxOperatingBufferExt
+
+  cisco_process:
+    auth:
+      community: __SNMP_COMMUNITY__
+    walk:
+      - cpmCPUTotal1minRev
+      - cpmCPUTotal5minRev
+      - cempMemPoolValid
+      - cempMemPoolHCUsed
+      - cempMemPoolHCFree
