@@ -18,6 +18,12 @@ foreach ($item in $items) {
   $key = "{0}{1}" -f $prefix,$item.Name
   Write-Output "{0} => {1}" -f $item.Fullname,$key
   Write-S3Object -Region $region -Bucket $bucket -Key $key -File $item
+
+  $keyPlusWorkaround = $key.Replace("+", " ")
+  if ( $key -ne $keyPlusWorkaround ) {
+    Write-Output "{0} => {1}" -f $item.Fullname,$keyPlusWorkaround
+    Write-S3Object -Region $region -Bucket $bucket -Key $keyPlusWorkaround -File $item
+  }
 }
 
 
