@@ -1,0 +1,3 @@
+SSH_USER=<%= node.dig(:prometheus, :junos_exporter, :ssh_user) %>
+SSH_KEYFILE=/etc/prometheus-junos-exporter/id_rsa
+IGNORE_TARGETS=<%= node.dig(:prometheus, :junos_exporter).fetch(:ignore_targets, false) ? 'true' : 'false' %>
