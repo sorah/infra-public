@@ -14,14 +14,38 @@ units_to_reload = []
 units_to_restart = []
 
 config.fetch(:certs).each do |k, cert|
+  if cert[:trust_ca_file]
+    list_path = "#{cert[:trust_ca_file]}.list"
+    trust_ca_list = [*cert[:trust_pkis], cert.fetch(:pki)].compact.uniq.sort
+    if !File.exist?(list_path) || File.read(list_path).chomp != trust_ca_list.join(?\n)
+      puts "=> #{k}: Refreshing trust_ca_file (#{trust_ca_list.join(', ')})"
+      File.open(cert[:trust_ca_file], "a", 0644) do |io|
+        io.sync = true
+        trust_ca_list.each do |pki|
+          system("vault", "read", "-field=certificate", "#{pki}/cert/ca", out: io, exception: true)
+          io.print "\n"
+        end
+      end
+      File.write list_path, "#{trust_ca_list.join(?\n)}\n"
+    end
+
+    units_to_reload.push(*cert.fetch(:units_to_reload, []))
+    units_to_restart.push(*cert.fetch(:units_to_restart, []))
+  end
+
+  pki_name_path = cert[:pki_name_file] || "#{cert[:cert_file]}.pki.txt"
+
   if File.exist?(cert[:cert_file])
     threshold = (cert.fetch(:threshold_days, 7) * 86400)
     not_after = OpenSSL::X509::Certificate.new(File.read(cert[:cert_file])).not_after
     remain = not_after - Time.now
-    if remain > threshold
+
+    pki_changed = !File.exist?(pki_name_path) || File.read(pki_name_path).chomp != cert.fetch(:pki)
+    if remain > threshold && !pki_changed
       puts "=> #{k}: not_after=#{not_after} (skip)"
       next
     end
+    puts " * #{k}: PKI changed" if pki_changed
   end
   puts "=> #{k}: issuing"
 
@@ -64,6 +88,8 @@ config.fetch(:certs).each do |k, cert|
     File.rename("#{path}.new", path)
   end
 
+  File.write pki_name_path, "#{cert[:pki]}\n"
+
   puts " * #{k}: serial=#{data.fetch(:serial_number)}"
 
   units_to_reload.push(*cert.fetch(:units_to_reload, []))
@@ -71,11 +97,11 @@ config.fetch(:certs).each do |k, cert|
 end
 
 puts "=> Notifying updates"
-units_to_reload.each do |unit|
+units_to_reload.uniq.each do |unit|
   puts " * systemctl reload #{unit}"
   system("systemctl", "reload", unit)
 end
-units_to_restart.each do |unit|
+units_to_restart.uniq.each do |unit|
   puts " * systemctl restart #{unit}"
   system("systemctl", "restart", unit)
 end
