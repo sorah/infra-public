@@ -55,11 +55,11 @@ module Ec2Vxlan
     end
 
     def region
-      @region ||= open('http://169.254.169.254/latest/meta-data/placement/availability-zone', &:read).chomp[0..-2]
+      @region ||= URI.open('http://169.254.169.254/latest/meta-data/placement/availability-zone', &:read).chomp[0..-2]
     end
 
     def instance_id
-      @instance_id ||= open('http://169.254.169.254/latest/meta-data/instance-id', &:read).chomp
+      @instance_id ||= URI.open('http://169.254.169.254/latest/meta-data/instance-id', &:read).chomp
     end
 
     def ec2
