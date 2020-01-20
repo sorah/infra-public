@@ -9,6 +9,7 @@ end
 
 gem_package 'fluentd'
 gem_package 'fluent-plugin-prometheus'
+gem_package 'oj'
 
 user 'fluentd' do
   system_user true
