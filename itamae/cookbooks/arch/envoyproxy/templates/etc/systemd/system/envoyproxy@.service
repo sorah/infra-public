@@ -1,0 +1,24 @@
+[Unit]
+Description=Envoy Proxy
+After=network.target
+
+[Service]
+Type=simple
+
+ExecStart=/usr/bin/envoyproxy-hot-restarter.py /usr/bin/envoyproxy-start.sh
+Environment=ENVOY_CONFIG_NAME=%i
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/bin/kill -TERM $MAINPID
+
+User=http
+Group=http
+
+Restart=on-failure
+RestartSec=1s
+
+LogsDirectory=envoyproxy
+RuntimeDirectory=envoyproxy
+StateDirectory=envoyproxy
+
+[Install]
+WantedBy=multi-user.target
