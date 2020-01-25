@@ -1,0 +1,18 @@
+[Unit]
+Description=nkmi-mnt-vol
+DefaultDependencies=no
+Conflicts=shutdown.target
+Before=nkmi-ami-startup.service systemd-tmpfiles-setup.service sysinit.target
+After=local-fs.target systemd-sysusers.service systemd-journald.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+ExecStartPre=-/usr/bin/mkfs.<%= node[:mnt_vol][:fstype] %> -L <%= node[:mnt_vol][:label] %> /dev/xvdf
+ExecStartPre=-/usr/bin/mkfs.<%= node[:mnt_vol][:fstype] %> -L <%= node[:mnt_vol][:label] %> /dev/nvme0n1
+ExecStartPre=-/usr/bin/mkfs.<%= node[:mnt_vol][:fstype] %> -L <%= node[:mnt_vol][:label] %> /dev/nvme1n1
+ExecStart=-/usr/bin/mount LABEL=<%= node[:mnt_vol][:label] %> /mnt/vol
+
+[Install]
+WantedBy=sysinit.target
