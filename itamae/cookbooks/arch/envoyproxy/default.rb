@@ -6,7 +6,7 @@ remote_file '/usr/bin/envoyproxy-hot-restarter.py' do
   group 'root'
   mode  '0755'
 end
-remote_file '/usr/bin/envoyproxy-start.sh' do
+template '/usr/bin/envoyproxy-start.sh' do
   owner 'root'
   group 'root'
   mode  '0755'
