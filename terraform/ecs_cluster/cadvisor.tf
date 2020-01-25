@@ -28,4 +28,5 @@ resource "aws_ecs_service" "cadvisor" {
   cluster             = aws_ecs_cluster.cluster.name
   task_definition     = aws_ecs_task_definition.cadvisor.arn
   scheduling_strategy = "DAEMON"
+  launch_type         = "EC2" # https://github.com/aws/containers-roadmap/issues/692
 }
