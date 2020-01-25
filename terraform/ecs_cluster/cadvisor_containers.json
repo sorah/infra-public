@@ -1,0 +1,24 @@
+[
+  {
+    "name": "app",
+    "image": "gcr.io/google-containers/cadvisor",
+    "command": [
+      "--docker_only",
+      "--disable_metrics=tcp,udp,percpu",
+      "--raw_cgroup_prefix_whitelist=/docker"
+    ],
+    "cpu": 128,
+    "memory": 128,
+    "memoryReservation": 64,
+    "portMappings": [
+      { "containerPort": 8080, "hostPort": 9103, "protocol": "tcp" }
+    ],
+    "mountPoints": [
+      { "sourceVolume": "rootfs", "containerPath": "/rootfs", "readOnly": true },
+      { "sourceVolume": "run", "containerPath": "/var/run", "readOnly": true },
+      { "sourceVolume": "sys", "containerPath": "/sys", "readOnly": true },
+      { "sourceVolume": "docker", "containerPath": "/var/lib/docker", "readOnly": true },
+      { "sourceVolume": "dev-disk", "containerPath": "/dev/disk", "readOnly": true }
+    ]
+  }
+]

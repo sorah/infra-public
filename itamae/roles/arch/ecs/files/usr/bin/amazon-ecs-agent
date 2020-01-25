@@ -1,0 +1,28 @@
+#!/usr/bin/ruby
+
+env = [File.read("/etc/ecs.env"), File.exist?('/run/ecs.env') ? File.read("/run/ecs.env") : nil].join.each_line.map{ |_| _.split(?=)[0] }.sort.uniq
+
+system "docker", "load", "-i", "/root/amazon-ecs-agent-#{ENV['ECS_VERSION']}.tar"
+system "docker", "rm", "amazon-ecs-agent"
+exec(
+  *%w(
+    docker run --name amazon-ecs-agent
+    --rm
+    -v /var/run/docker.sock:/var/run/docker.sock
+    -v /var/log/ecs:/log
+    -v /var/lib/ecs/data:/data
+    -v /etc/ecs:/etc/ecs
+    -v /sbin:/sbin
+    -v /lib:/lib
+    -v /lib64:/lib64
+    -v /usr/lib:/usr/lib
+    -v /usr/lib64:/usr/lib64
+    -v /proc:/host/proc
+    -v /sys/fs/cgroup:/sys/fs/cgroup
+    --cap-add=sys_admin
+    --cap-add=net_admin
+    --net=host
+  ),
+  *(env.flat_map{ |_| ['-e', _] }),
+  "amazon/amazon-ecs-agent:#{ENV['ECS_VERSION']}",
+) 

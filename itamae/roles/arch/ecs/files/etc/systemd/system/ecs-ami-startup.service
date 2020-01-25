@@ -1,0 +1,13 @@
+[Unit]
+Description=ecs-ami-startup
+Wants=nkmi-ami-startup.service
+After=nkmi-ami-startup.service
+Before=ecs.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/ecs-ami-startup
+
+[Install]
+WantedBy=multi-user.target

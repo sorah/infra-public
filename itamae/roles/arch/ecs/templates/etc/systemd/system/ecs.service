@@ -1,0 +1,22 @@
+[Unit]
+Description=amazon-ecs-agent
+Requires=docker.service fluentd.service
+After=docker.service fluentd.service
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/ecs.env
+EnvironmentFile=-/run/ecs.env
+ExecStartPre=/usr/bin/iptables -t nat -A PREROUTING -p tcp -d 169.254.170.2 --dport 80 -j DNAT --to-destination 127.0.0.1:51679 -m comment --comment ecs
+ExecStartPre=/usr/bin/iptables -t nat -A OUTPUT -p tcp -d 169.254.170.2 --dport 80 -j REDIRECT --to-ports 51679 -m comment --comment ecs
+ExecStart=/usr/bin/amazon-ecs-agent
+ExecStopPost=/usr/bin/iptables -t nat -D PREROUTING -p tcp -d 169.254.170.2 --dport 80 -j DNAT --to-destination 127.0.0.1:51679 -m comment --comment ecs
+ExecStopPost=/usr/bin/iptables -t nat -D OUTPUT -p tcp -d 169.254.170.2 --dport 80 -j REDIRECT --to-ports 51679 -m comment --comment ecs
+Restart=on-failure
+
+LogsDirectory=ecs
+StateDirectory=ecs
+ConfigurationDirectory=ecs
+
+[Install]
+WantedBy=multi-user.target

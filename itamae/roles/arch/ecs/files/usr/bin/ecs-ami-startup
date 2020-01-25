@@ -1,0 +1,77 @@
+#!/usr/bin/ruby
+require 'aws-sdk-autoscaling'
+require 'aws-sdk-ec2'
+require 'open-uri'
+
+FLAG = '/etc/ecs-ami-startup.done'
+instance_id = URI.open('http://169.254.169.254/latest/meta-data/instance-id', 'r', &:read)
+az = URI.open('http://169.254.169.254/latest/meta-data/placement/availability-zone', 'r', &:read)
+region = az[0...-1]
+
+ec2 = Aws::EC2::Client.new(region: region)
+
+tags = {}
+loop do
+  begin
+    tags = ec2.describe_tags(filters: [name: 'resource-id', values: [instance_id]]).tags.map{ |_| [_.key,_.value] }.to_h
+  rescue Aws::EC2::Errors::RequestLimitExceeded => e
+    $stderr.puts e.inspect
+    sleep 5
+  end
+
+  if tags['Name']
+    puts "there's a name"
+    exit
+  end
+
+  case tags['Status']
+  when 'launching'
+    break
+  else
+    puts "there's a status tag but not launching: #{tags['Status'].inspect}"
+    exit
+  end
+
+  puts 'waiting for status tag'
+  sleep 5
+end
+
+launch_lifecycle_token = tags['LaunchLifecycleToken']
+cluster = tags.fetch('Cluster')
+asg = tags['aws:autoscaling:groupName']
+
+if launch_lifecycle_token
+  as = Aws::AutoScaling::Client.new(region: region)
+  as_hook, as_token = launch_lifecycle_token.split(/ +/,2)
+  as.complete_lifecycle_actIon(
+    lifecycle_hook_name: as_hook,
+    auto_scaling_group_name: asg,
+    lifecycle_action_token: as_token,
+    lifecycle_action_result: 'CONTINUE',
+  )
+end
+
+if File.exist?(FLAG)
+  puts "flag exist, exiting"
+  exit 0
+end
+
+
+name = "ecs-#{cluster}-#{instance_id}"
+puts "set hostname to #{name.inspect}"
+ec2.create_tags(
+  resources: [instance_id],
+  tags: [
+    {key: 'Name', value: name},
+    {key: 'Status', value: 'Working'},
+  ],
+)
+system "hostnamectl", "set-hostname", name, exception: true
+File.write "/etc/hostname", "#{name}\n"
+
+puts "set ECS_CLUSTER=#{cluster}"
+File.write "/run/ecs.env", "ECS_CLUSTER=#{cluster}\n"
+
+File.write FLAG, "#{Time.now.to_i}\n"
+
+puts "done"
