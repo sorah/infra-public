@@ -1,6 +1,6 @@
 node.reverse_merge!(
   mnt_vol: {
-    device: node[:hocho_ec2] ? '/dev/nvme0n1' : '/dev/sdb',
+    device: node[:hocho_ec2] ? (run_command('cat /proc/mounts | grep nvme0n1', error: false).exit_status == 0 ? '/dev/nvme1n1' : '/dev/nvme0n1') : '/dev/sdb',
     label: 'mnt-vol',
     fstype: 'ext4',
   }
