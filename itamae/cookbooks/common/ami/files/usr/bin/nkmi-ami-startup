@@ -1,0 +1,32 @@
+#!/usr/bin/ruby
+require 'json'
+require 'open-uri'
+require 'aws-sdk-ec2'
+
+MARK = '/etc/nkmi-ami-startup.mark'
+
+config = JSON.parse(File.read('/etc/nkmi-ami-startup.json'), symbolize_names: true)
+role = config.fetch(:role)
+
+instance_id = URI.open('http://169.254.169.254/latest/meta-data/instance-id', 'r', &:read).chomp
+az = URI.open('http://169.254.169.254/latest/meta-data/placement/availability-zone', 'r', &:read).chomp
+region = az[0...-1]
+
+tags = [
+  {key: 'Role', value: role},
+]
+
+if config[:set_hostname]
+  tags.push(key: 'Name', value: hostname)
+  hostname =  "#{role}-#{instance_id}"
+  File.write "/etc/hostname", "#{hostname}\n"
+  system "hostnamectl", "set-hostname", hostname, exception: true
+end
+
+ec2 = Aws::EC2::Client.new(region: region)
+ec2.create_tags(
+  resources: [instance_id],
+  tags: tags,
+)
+
+File.write MARK, "#{Time.now.to_i}\n"

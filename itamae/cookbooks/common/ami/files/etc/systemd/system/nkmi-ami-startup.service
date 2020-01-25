@@ -1,0 +1,13 @@
+[Unit]
+Description=nkmi-ami-startup.service
+Wants=network-online.target
+After=network.target network-online.target
+ConditionPathExists=!/etc/nkmi-ami-startup.mark
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/nkmi-ami-startup
+
+[Install]
+WantedBy=multi-user.target
