@@ -50,6 +50,30 @@ include_cookbook 'docker'
 
 # when it available, cloud-init starts dhclient where a unwanted behavior
 # package 'dhclient' # XXX: separate cookbook
+#
+file '/etc/sysctl.d/99-ecs.conf' do
+  content "net.ipv4.conf.all.route_localnet=1\n"
+  owner 'root'
+  group 'root'
+  mode  '0644'
+  notifies :run, 'execute[sysctl -p /etc/sysctl.d/99-ecs.conf]'
+end
+
+execute 'sysctl -p /etc/sysctl.d/99-ecs.conf' do
+  action :nothing
+end
+
+file '/etc/modprobe.d/br_netfilter.conf' do
+  content "install br_netfilter\n"
+  owner 'root'
+  group 'root'
+  mode  '0644'
+  notifies :run, 'execute[modprobe br_netfilter]'
+end
+
+execute 'modprobe br_netfilter' do
+  action :nothing
+end
 
 ##
 
