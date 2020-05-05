@@ -4,6 +4,7 @@ node.reverse_merge!(
       'storage-driver' => 'overlay2',
       'bip' => '10.10.38.1/24',
       'default-address-pool' => [base: '10.38.0.0/20', size: 23],
+      'exec-opts' => ["native.cgroupdriver=systemd"],
     },
   },
 )

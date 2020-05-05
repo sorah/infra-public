@@ -1,0 +1,23 @@
+[Unit]
+Description=Kubernetes Kubelet Server
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+After=docker.service
+Requires=docker.service
+
+[Service]
+WorkingDirectory=/var/lib/kubelet
+EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
+
+ExecStart=/usr/bin/kubelet \
+          --config=/var/lib/kubelet/config.yaml \
+          --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf \
+          --kubeconfig=/etc/kubernetes/kubelet.conf \
+          $KUBELET_KUBEADM_ARGS
+
+Restart=always
+StartLimitInterval=0
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
