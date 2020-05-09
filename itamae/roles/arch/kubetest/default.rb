@@ -77,12 +77,6 @@ package 'kubernetes-bin'
 package 'ebtables'
 package 'ethtool'
 
-directory '/etc/kubernetes/apiserver' do
-  owner 'root'
-  group 'root'
-  mode  '0755'
-end
-
 %w(
   /etc/kubernetes/config
   /etc/kubernetes/controller-manager
@@ -90,10 +84,25 @@ end
   /etc/kubernetes/proxy
   /etc/kubernetes/scheduler
 ).each do |_|
-  file _ do
+  execute "rm #{_.shellescape}" do
+    only_if "test -f #{_.shellescape}"
     action :delete
   end
 end
+
+directory '/etc/kubernetes/apiserver' do
+  owner 'root'
+  group 'root'
+  mode  '0755'
+end
+
+directory '/etc/kubernetes/manifests' do
+  owner 'root'
+  group 'root'
+  mode  '0755'
+end
+
+
 
 ##
 
@@ -102,6 +111,31 @@ template "/etc/systemd/system/kubelet.service" do
   group 'root'
   mode  '0644'
   notifies :run, 'execute[systemctl daemon-reload]'
+end
+
+##
+
+package 'cni-plugins'
+
+directory '/opt/cni' do
+  owner 'root'
+  group 'root'
+  mode  '0755'
+end
+
+directory '/opt/cni/bin' do
+  owner 'root'
+  group 'root'
+  mode  '0755'
+end
+
+%w(
+  bandwidth  bridge  dhcp  firewall  flannel  host-device  host-local  ipvlan  loopback  macvlan  portmap  ptp  sbr  static  tuning  vlan
+).each do |_|
+  link "/opt/cni/bin/#{_}" do
+    force true
+    to "/usr/lib/cni/#{_}"
+  end
 end
 
 service 'kubelet' do
