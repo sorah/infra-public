@@ -51,10 +51,15 @@ directory '/var/log/fluentd' do
   mode  '0755'
 end
 
-
 template '/etc/systemd/system/fluentd.service' do
   owner 'root'
   group 'root'
   mode  '0644'
   notifies :run, 'execute[systemctl daemon-reload]'
+end
+
+directory '/etc/systemd/system/fluentd.service.d' do
+  owner 'root'
+  group 'root'
+  mode  '0755'
 end

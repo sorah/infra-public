@@ -1,6 +1,12 @@
+# NOTE: the recipes in this cookbook expects kubeadm-built cluster.
+# TODO: manage static pods in recipes
+
+include_role 'kubetest::override'
+
 node.reverse_merge!(
   kubernetes: {
     master: false,
+    cluster_name: 'aperture',
     master_vault_role_id: node[:secrets][:'vault_approle.role_id.k8s_aperture_master'],
     node_vault_role_id: node[:secrets][:'vault_approle.role_id.k8s_aperture_node'],
   },
@@ -62,6 +68,7 @@ end
 ##
 
 include_role 'kubetest::routing'
+include_role 'kubetest::logging'
 
 ##
 
@@ -70,8 +77,13 @@ package 'kubernetes-bin'
 package 'ebtables'
 package 'ethtool'
 
+directory '/etc/kubernetes/apiserver' do
+  owner 'root'
+  group 'root'
+  mode  '0755'
+end
+
 %w(
-  /etc/kubernetes/apiserver
   /etc/kubernetes/config
   /etc/kubernetes/controller-manager
   /etc/kubernetes/kubelet
@@ -82,6 +94,8 @@ package 'ethtool'
     action :delete
   end
 end
+
+##
 
 template "/etc/systemd/system/kubelet.service" do
   owner 'root'
