@@ -1,0 +1,24 @@
+#!/bin/bash
+NAME=$0
+if [[ -z "$0" ]]; then
+  echo "usage: $(basename $0) NAME"
+fi
+set -x
+set -e
+
+cd /var/lib/machines
+mkdir $NAME
+pacstrap $NAME base rsync sudo openssh
+vim $NAME/etc/systemd/network/10-host0.network
+echo $NAME > $NAME/etc/hostname
+mkdir -p $NAME/root/.ssh
+curl -o $NAME/root/.ssh/authorized_keys https://sorah.jp/ssh-key.txt
+chown root:root $NAME/root/.ssh
+chmod 700 $NAME/root/.ssh
+chmod 600 $NAME/root/.ssh/authorized_keys
+arch-chroot $NAME systemctl enable sshd systemd-networkd systemd-resolved
+rm $NAME/etc/resolv.conf
+ln -s /run/systemd/resolve/resolv.conf $NAME/etc/resolv.conf
+
+echo
+echo "NEXT STEP: sudo vim /var/lib/machines/${NAME}/etc/systemd/network/10-host0.network"

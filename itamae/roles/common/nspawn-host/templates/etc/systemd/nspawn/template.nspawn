@@ -1,0 +1,10 @@
+<%- @machine.each do |k1, v1| -%>
+[<%= k1.to_s %>]
+<%- v1.each do |k2, v2| -%>
+<%- v2 = [*v2] -%>
+<%- v2.compact.each do |v| -%>
+<%= k2 %>=<%= v %>
+<%- end -%>
+<%- end -%>
+
+<%- end -%>
