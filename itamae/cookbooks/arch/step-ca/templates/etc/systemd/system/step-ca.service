@@ -1,0 +1,24 @@
+[Unit]
+Description=step-ca
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/step-ca \
+<%- if node[:step_ca][:password_file] -%>
+  --password-file=<%= node[:step_ca][:password_file] %> \
+<%- end -%>
+  <%= node[:step_ca][:config_json] %>
+
+ExecReload=/bin/kill -HUP $MAINPID
+
+User=step-ca
+Group=step-ca
+
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+StandardOutput=append:/var/log/step-ca.log
+StandardError=inherit
+
+[Install]
+WantedBy=multi-user.target

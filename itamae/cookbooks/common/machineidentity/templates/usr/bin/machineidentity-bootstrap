@@ -1,0 +1,10 @@
+#!/bin/bash -xe
+export STEPPATH=/var/lib/machineidentity/step
+STAGE=/var/lib/machineidentity/stage
+DESTDIR=/var/lib/machineidentity
+
+/usr/bin/step ca bootstrap --ca-url "${CA_URL}" --fingerprint "${FINGERPRINT}" --force
+/usr/bin/step ca certificate "$@" ${STAGE}/identity.crt ${STAGE}/key.pem --force
+rm -f /var/lib/machineidentity/force-bootstrap
+
+exec /usr/bin/machineidentity-renewal

@@ -1,0 +1,7 @@
+#!/bin/bash -e
+<%- node[:machineidentity][:units_to_reload].each do |unit| -%>
+systemctl reload <%= unit %> || :
+<%- end -%>
+<%- node[:machineidentity][:units_to_restart].each do |unit| -%>
+systemctl restart <%= unit %> || :
+<%- end -%>

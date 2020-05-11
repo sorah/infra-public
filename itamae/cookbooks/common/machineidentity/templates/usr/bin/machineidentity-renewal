@@ -1,0 +1,25 @@
+#!/bin/bash -xe
+export STEPPATH=/var/lib/machineidentity/step
+STAGE=/var/lib/machineidentity/stage
+DESTDIR=/var/lib/machineidentity
+
+cp ${STAGE}/identity.crt ${DESTDIR}/identity.crt.new
+cp ${STAGE}/key.pem ${DESTDIR}/key.pem.new
+
+chown machineidentity:machineidentity ${DESTDIR}/identity.crt.new
+chmod 0644 ${DESTDIR}/identity.crt.new
+chown machineidentity:machineidentity ${DESTDIR}/key.pem.new
+chmod 0640 ${DESTDIR}/key.pem.new
+
+mv ${DESTDIR}/identity.crt.new ${DESTDIR}/identity.crt
+mv ${DESTDIR}/key.pem.new ${DESTDIR}/key.pem
+
+/usr/bin/step ca roots ${STAGE}/roots-self.pem --force
+/usr/bin/step ca federation ${STAGE}/roots-federated.pem --force
+
+chmod 0644 ${STAGE}/roots-*.pem
+cat ${STAGE}/roots-*.pem > ${STAGE}/roots.pem
+cp ${STAGE}/roots-self.pem ${STEPPATH}/certs/root_ca.crt
+mv ${STAGE}/roots*.pem -t ${DESTDIR}
+
+exec sudo /usr/bin/machineidentity-renewal-notify

@@ -1,0 +1,4 @@
+# vim: ft=sudoers
+Cmnd_Alias MACHINEIDENTITY_NOTIFY_CMD = /usr/bin/machineidentity-renewal-notify
+machineidentity ALL = (root) NOPASSWD: MACHINEIDENTITY_NOTIFY_CMD
+Defaults!MACHINEIDENTITY_NOTIFY_CMD !requiretty

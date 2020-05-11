@@ -1,0 +1,23 @@
+[Unit]
+Description=machineidentity-renewal
+After=network.target network-online.target
+ConditionPathExists=/var/lib/machineidentity/stage/identity.crt
+StartLimitIntervalSec=0
+
+[Service]
+ExecStart=/usr/bin/step ca renew --daemon \
+          --exec "/usr/bin/machineidentity-renewal" \
+          /var/lib/machineidentity/stage/identity.crt \
+          /var/lib/machineidentity/stage/key.pem
+ExecReload=/bin/kill -HUP $MAINPID
+
+Environment=STEPPATH=/var/lib/machineidentity/step
+
+User=machineidentity
+Group=machineidentity
+
+RestartSec=20m
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
