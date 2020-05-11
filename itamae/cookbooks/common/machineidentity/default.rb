@@ -85,7 +85,6 @@ if !run_command("test -e /var/lib/machineidentity/identity.crt -a ! -e /var/lib/
     "FINGERPRINT=#{node[:machineidentity].fetch(:fingerprint).shellescape} " \
     "/usr/bin/machineidentity-bootstrap " \
     "--token #{node[:machineidentity].fetch(:token).shellescape} " \
-    "#{node[:machineidentity].fetch(:sans, []).flat_map { |_| ["--san", _] }.shelljoin} " \
     "#{node[:machineidentity].fetch(:common_name).shellescape}"
   execute "machineidentity step ca certificate"do
     command cmd
