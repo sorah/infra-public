@@ -10,7 +10,7 @@ node.reverse_merge!(
       # key: nil,
       dnsNames: [],
       logger: {
-        format: 'text',
+        format: 'json',
       },
       db: {
         type: "badger",
@@ -34,6 +34,8 @@ node.reverse_merge!(
 
 include_role 'base'
 include_cookbook 'step-ca'
+
+include_role 'step-ca::logging'
 
 directory '/mnt/vol/step-ca' do
   owner 'step-ca'
