@@ -7,6 +7,7 @@ local_vpc_routes = node[:hocho_vpc][:cidr_block_association_set].map{ |_| _[:cid
 end
 
 node[:bgp_anycast][:router_id] = node.dig(:hocho_ec2, :private_ip_address)
+node[:bgp_anycast][:table_id] = 11
 
 ##
 # Since inter-region VPC peering (PCX) enforces src/dst address check,
@@ -22,6 +23,17 @@ template "/etc/bird/bird.conf" do
   notifies :run, 'execute[systemctl try-reload-or-restart bird.service]'
 end
 
+template "/etc/systemd/system/ip-rule-bgp-anycast.service" do
+  owner 'root'
+  group 'root'
+  mode  '0644'
+  notifies :run, 'execute[systemctl daemon-reload]'
+end
+
 service "bird" do
+  action [:enable, :start]
+end
+
+service "ip-rule-bgp-anycast.service" do
   action [:enable, :start]
 end

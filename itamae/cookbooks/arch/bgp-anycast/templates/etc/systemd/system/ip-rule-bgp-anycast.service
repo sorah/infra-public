@@ -1,0 +1,14 @@
+[Unit]
+Description=ip-rule-bgp-anycast
+Before=network.target
+After=systemd-networkd.service
+
+[Service]
+Type=oneshot
+<%- node.dig(:bgp_anycast,:services).map {|k,v| v[:ip] }.compact.each do |ip| -%>
+ExecStart=/usr/bin/ip rule add from <%= ip %>/32 table <%= node[:bgp_anycast].fetch(:table_id) %>
+ExecStart=/usr/bin/ip rule add to <%= ip %>/32 table <%= node[:bgp_anycast].fetch(:table_id) %>
+<%- end -%>
+RemainAfterExit=yes
+
+
