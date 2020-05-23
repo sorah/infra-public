@@ -6,6 +6,7 @@ node.reverse_merge!(
         scrape_timeout: '10s',
         evaluation_interval: '20s',
         external_labels: {
+          promhost: node[:hostname],
         },
       },
       rule_files: %w(/etc/prometheus/rules/*.yml),

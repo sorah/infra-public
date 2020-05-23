@@ -1,5 +1,11 @@
 node.reverse_merge!(
   prometheus: {
+    tsdb: {
+      path: '/mnt/vol/prometheus-data',
+      retention_time: '30d',
+      min_block_duration: '2h',
+      max_block_duration: '2h',
+    },
   },
 )
 
@@ -27,6 +33,13 @@ file '/etc/prometheus/prometheus.yml' do
   group 'root'
   mode  '0644'
   notifies :reload, 'service[prometheus.service]'
+end
+
+template '/etc/systemd/system/prometheus.service.d/exec.conf' do
+  owner 'root'
+  group 'root'
+  mode  '0644'
+  notifies :run, 'execute[systemctl daemon-reload]'
 end
 
 service 'prometheus.service' do
