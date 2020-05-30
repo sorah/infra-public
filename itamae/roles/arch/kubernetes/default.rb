@@ -1,7 +1,7 @@
 # NOTE: the recipes in this cookbook expects kubeadm-built cluster.
 # TODO: manage static pods in recipes
 
-include_role 'kubetest::override'
+include_role 'kubernetes::override'
 
 node.reverse_merge!(
   kubernetes: {
@@ -42,7 +42,7 @@ node.reverse_merge!(
 )
 
 include_role 'base'
-include_role 'kubetest::master' if node[:kubernetes][:master]
+include_role 'kubernetes::master' if node[:kubernetes][:master]
 
 directory '/etc/kubernetes' do
   owner 'root'
@@ -67,8 +67,8 @@ end
 
 ##
 
-include_role 'kubetest::routing'
-include_role 'kubetest::logging'
+include_role 'kubernetes::routing'
+include_role 'kubernetes::logging'
 
 ##
 
@@ -83,10 +83,10 @@ package 'ethtool'
   /etc/kubernetes/kubelet
   /etc/kubernetes/proxy
   /etc/kubernetes/scheduler
+  /etc/kubernetes/apiserver
 ).each do |_|
   execute "rm #{_.shellescape}" do
     only_if "test -f #{_.shellescape}"
-    action :delete
   end
 end
 
