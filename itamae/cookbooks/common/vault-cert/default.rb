@@ -1,8 +1,13 @@
 node.reverse_merge!(
   vault_cert: {
     vault_addr: 'https://vault.nkmi.me:8200',
-    token_file: '/root/.vault-token',
+    # token_file: '/root/.vault-token',
     env_file: nil,
+    tls: {
+      path: 'auth/cert/login',
+      cert_file: "/var/lib/machineidentity/identity.crt",
+      key_file: "/var/lib/machineidentity/key.pem",
+    },
     certs: {
       # key: { pki:, role:, ca_file:, cert_file:, fullchain_file: key_file:, trust_ca_file: trust_pkis:, owner:, group:, mode:, sans:, cn:, ip:, units_to_reload:, units_to_restart:, threshold_days:, }
     },

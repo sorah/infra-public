@@ -3,22 +3,49 @@ require 'json'
 require 'openssl'
 require 'fileutils'
 
-config = JSON.parse(File.read('/etc/nkmi-vault-cert.json'), symbolize_names: true)
-
-ENV['VAULT_ADDR'] ||= config[:vault_addr]
-unless ENV['VAULT_TOKEN']
-  ENV['VAULT_TOKEN'] = File.read(config.fetch(:token_file)).chomp
+def ensure_token!
+  return if ENV['VAULT_TOKEN']
+  ensure_token_file!
+  ensure_token_tls!
+  unless ENV['VAULT_TOKEN']
+    raise "no authentication method against vault"
+  end
 end
+
+def ensure_token_file!
+  return unless @config[:token_file]
+  return if ENV['VAULT_TOKEN']
+  ENV['VAULT_TOKEN'] = File.read(@config.fetch(:token_file)).chomp
+end
+
+def ensure_token_tls!
+  return unless @config[:tls]
+  return if ENV['VAULT_TOKEN']
+  args = []
+  args.push("name=#{@config[:tls][:name]}") if @config[:tls][:name]
+
+  env = {
+    'VAULT_CLIENT_CERT' => @config[:tls].fetch(:cert_file),
+    'VAULT_CLIENT_KEY' => @config[:tls].fetch(:key_file),
+  }
+  ENV['VAULT_TOKEN'] = IO.popen([env, 'vault', 'write', '-field=token', '-force', @config[:tls].fetch(:path), *args], 'r', &:read)
+  raise "failed to login with TLS" unless $?.success?
+end
+
+@config = JSON.parse(File.read('/etc/nkmi-vault-cert.json'), symbolize_names: true)
+
+ENV['VAULT_ADDR'] ||= @config[:vault_addr]
 
 units_to_reload = []
 units_to_restart = []
 
-config.fetch(:certs).each do |k, cert|
+@config.fetch(:certs).each do |k, cert|
   if cert[:trust_ca_file]
     list_path = "#{cert[:trust_ca_file]}.list"
     trust_ca_list = [*cert[:trust_pkis], cert.fetch(:pki)].compact.uniq.sort
     if !File.exist?(list_path) || File.read(list_path).chomp != trust_ca_list.join(?\n)
       puts "=> #{k}: Refreshing trust_ca_file (#{trust_ca_list.join(', ')})"
+      ensure_token!
       File.open(cert[:trust_ca_file], "a", 0644) do |io|
         io.sync = true
         trust_ca_list.each do |pki|
@@ -60,6 +87,7 @@ config.fetch(:certs).each do |k, cert|
 
   puts " * #{args.join(' ')}"
 
+  ensure_token!
   result = IO.popen(['vault', 'write', '-format=json', *args], 'r', &:read)
   exitstatus = $?
   unless exitstatus.success?
