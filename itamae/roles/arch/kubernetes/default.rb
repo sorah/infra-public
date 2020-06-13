@@ -64,10 +64,9 @@ end
 include_cookbook 'vault-approle-keep'
 include_cookbook 'vault-cert'
 
-
-vault_approle_keep 'kubernetes' do
-  role_id node[:kubernetes][:master] ? node[:kubernetes][:master_vault_role_id] : node[:kubernetes][:node_vault_role_id]
-end
+#vault_approle_keep 'kubernetes' do
+#  role_id node[:kubernetes][:master] ? node[:kubernetes][:master_vault_role_id] : node[:kubernetes][:node_vault_role_id]
+#end
 
 ##
 
