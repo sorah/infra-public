@@ -17,6 +17,7 @@ if node[:acmesmith_fetch][:aws_use_access_key] && !(node[:acmesmith_fetch][:aws_
   node[:acmesmith_fetch][:aws_secret_access_key] = node[:secrets][:'aws.acmesmith-fetch.key']
 end
 
+include_cookbook 'prometheus-textfile-certificate'
 include_cookbook 'aws-sdk-ruby'
 
 remote_file '/usr/bin/nkmi-acmesmith-fetch' do

@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+require 'json'
+require 'openssl'
+
+OUT = '/run/prometheus-node-exporter/textfile/certificate.prom'
+
+config = JSON.parse(File.read('/etc/prometheus-textfile-certificate.json'))
+files = config['glob_paths'].flat_map { |_| Dir[_] }
+
+lines = files.flat_map do |path|
+  File.read(path).lines.slice_before(/^-----BEGIN CERTIFICATE-----$/).flat_map do |pem_lines|
+    cert = OpenSSL::X509::Certificate.new(pem_lines.join)
+    ca = cert.extensions.find{ |_| _.oid == 'basicConstraints' }&.value&.include?('CA:TRUE')
+
+    labels = %(file="#{path}", subject="#{cert.subject.to_s.gsub(/"/, '\"').gsub(/[\r\n]/,'').gsub(/\\/,"\\\\")}")
+    labels << ', ca="y"' if ca
+
+    [
+      %(node_certificate_not_after{#{labels}} #{cert.not_after.to_f}),
+      %(node_certificate_lifetime{#{labels}} #{cert.not_after.to_f - cert.not_before.to_f}),
+    ]
+  rescue OpenSSL::X509::CertificateError
+    next nil
+  end
+rescue Errno::EPERM, Errno::EACCES
+  next nil
+end.compact
+
+lines << ["node_certificate_last_run{} #{Time.now.to_f}"]
+
+content = [*lines, nil].join(?\n)
+if ARGV.include?('--update')
+  File.write "#{OUT}.progress", content
+  File.rename "#{OUT}.progress", OUT
+else
+  puts content
+end

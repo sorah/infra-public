@@ -14,6 +14,7 @@ node.reverse_merge!(
   },
 )
 
+include_cookbook 'prometheus-textfile-certificate'
 include_cookbook 'vault'
 
 file '/etc/nkmi-vault-cert.json' do

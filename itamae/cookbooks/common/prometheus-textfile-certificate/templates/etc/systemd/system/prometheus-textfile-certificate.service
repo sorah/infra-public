@@ -1,0 +1,10 @@
+[Unit]
+Description=prometheus-textfile-certificate
+Wants=prometheus-node-exporter.service
+After=prometheus-node-exporter.service
+
+[Service]
+Type=oneshot
+User=node_exporter
+Group=node_exporter
+ExecStart=/usr/bin/prometheus-textfile-certificate --update

@@ -1,0 +1,11 @@
+[Unit]
+Description=prometheus-textfile-certificate timer
+Wants=prometheus-node-exporter.service
+After=prometheus-node-exporter.service
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1h
+
+[Install]
+WantedBy=timers.target
