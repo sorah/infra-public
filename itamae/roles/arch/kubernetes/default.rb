@@ -19,11 +19,14 @@ node.reverse_merge!(
     },
   },
   vault_cert: {
-    env_file: '/var/lib/vault-approle-keep/kubernetes',
+    tls: {
+      name: 'k8s-aperture',
+    },
+    # env_file: '/var/lib/vault-approle-keep/kubernetes',
     certs: {
       etcd: {
-        trust_pkis: %w(pki/k8s-aperture-etcd/g1),
-        pki: 'pki/k8s-aperture-etcd/g1',
+        trust_pkis: %w(pki/k8s-aperture-etcd/g2 pki/k8s-aperture-etcd/g1),
+        pki: 'pki/k8s-aperture-etcd/g2',
         role: 'node',
         trust_ca_file: '/etc/ssl/self/k8s-etcd/trust.pem',
         ca_file: '/etc/ssl/self/k8s-etcd/ca.pem',
@@ -52,14 +55,15 @@ end
 
 ##
 
-include_cookbook 'vault-approle-keep'
-include_cookbook 'vault-cert'
-
 directory '/etc/ssl/self/k8s-etcd' do
   owner 'root'
   group 'root'
   mode  '0755'
 end
+
+include_cookbook 'vault-approle-keep'
+include_cookbook 'vault-cert'
+
 
 vault_approle_keep 'kubernetes' do
   role_id node[:kubernetes][:master] ? node[:kubernetes][:master_vault_role_id] : node[:kubernetes][:node_vault_role_id]

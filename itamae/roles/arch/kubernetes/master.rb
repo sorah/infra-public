@@ -1,4 +1,6 @@
-include_role 'kubetest::etcd'
+node[:vault_cert][:tls][:name] = 'k8s-aperture-master'
+
+include_role 'kubernetes::etcd'
 
 node.reverse_merge!(
   kubernetes: {

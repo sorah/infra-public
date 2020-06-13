@@ -12,7 +12,7 @@ node[:vault_cert][:certs][:etcd_server] = node[:vault_cert][:certs][:etcd].merge
 )
 
 node[:vault_cert][:certs][:etcd_kube] = node[:vault_cert][:certs][:etcd].merge(
-  role: 'master',
+  role: 'kube',
   trust_ca_file: '/etc/ssl/self/k8s-etcd-kube/trust.pem',
   ca_file: '/etc/ssl/self/k8s-etcd-kube/ca.pem',
   cert_file: '/etc/ssl/self/k8s-etcd-kube/cert.pem',
@@ -54,6 +54,12 @@ include_cookbook 'etcd'
 include_cookbook 'etcd::server'
 
 directory '/etc/ssl/self/k8s-etcd-server' do
+  owner 'root'
+  group 'root'
+  mode  '0755'
+end
+
+directory '/etc/ssl/self/k8s-etcd-kube' do
   owner 'root'
   group 'root'
   mode  '0755'
