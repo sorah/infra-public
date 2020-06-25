@@ -1,0 +1,13 @@
+[Unit]
+Description=Setup FOU/GUE listener
+Before=network.target
+After=systemd-networkd.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/nkmi-setup-gue-receive
+TimeoutStartSec=15s
+
+[Install]
+WantedBy=multi-user.target

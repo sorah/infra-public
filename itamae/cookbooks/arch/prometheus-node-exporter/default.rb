@@ -29,6 +29,7 @@ node.reverse_merge!(
         uname
         vmstat
         zfs
+        ipvs
       )
     },
   },
