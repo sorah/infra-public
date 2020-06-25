@@ -14,8 +14,10 @@ aws_credential = if config.fetch('aws_use_access_key', false)
 s3_region = config.fetch('s3_region')
 s3_bucket = config.fetch('s3_bucket')
 s3_prefix = config.fetch('s3_prefix', '')
-cert_passphrase = config.fetch('cert_passphrase', nil)
+cert_passphrase = config.fetch('cert_passphrase', '')
 common_names = config.fetch('common_names', {})
+
+require '/usr/bin/nkmi-vault-aws-creds' if config['aws_use_vault']
 
 s3_config = {region: s3_region}
 s3_config[:credentials] = aws_credential if aws_credential
@@ -67,7 +69,7 @@ common_names.each do |common_name, options|
     path = File.join(cert_store_path, name)
     File.open("#{path}.new", 'w', 0640) do |io|
       key = "#{cert_prefix}#{latest}/#{name}"
-      io.puts OpenSSL::PKey::RSA.new(s3.get_object(bucket: s3_bucket, key: key).body.read, config.fetch('cert_passphrase', '')).to_pem
+      io.puts OpenSSL::PKey::RSA.new(s3.get_object(bucket: s3_bucket, key: key).body.read, cert_passphrase).to_pem
     end
     FileUtils.chown(options.fetch('owner', 'root'), options.fetch('group', 'root'), "#{path}.new")
     File.rename("#{path}.new", path)

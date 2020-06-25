@@ -1,0 +1,66 @@
+#!/usr/bin/env ruby
+require 'json'
+
+module VaultAwsCreds
+  def self.ensure_token!
+    return if ENV['VAULT_TOKEN']
+    ensure_token_file!
+    ensure_token_tls!
+    unless ENV['VAULT_TOKEN']
+      raise "no authentication method against vault"
+    end
+  end
+
+  def self.ensure_token_file!
+    return unless @config[:token_file]
+    return if ENV['VAULT_TOKEN']
+    ENV['VAULT_TOKEN'] = File.read(@config.fetch(:token_file)).chomp
+  end
+
+  def self.ensure_token_tls!
+    return unless @config[:tls]
+    return if ENV['VAULT_TOKEN']
+    args = []
+    args.push("name=#{@config[:tls][:name]}") if @config[:tls][:name]
+
+    env = {
+      'VAULT_CLIENT_CERT' => @config[:tls].fetch(:cert_file),
+      'VAULT_CLIENT_KEY' => @config[:tls].fetch(:key_file),
+    }
+    ENV['VAULT_TOKEN'] = IO.popen([env, 'vault', 'write', '-field=token', '-force', @config[:tls].fetch(:path), *args], 'r', &:read)
+    raise "failed to login with TLS" unless $?.success?
+  end
+
+  def self.run
+    @config = JSON.parse(File.read('/etc/nkmi-vault-aws-creds.json'), symbolize_names: true)
+    ENV['VAULT_ADDR'] ||= @config[:vault_addr]
+    ensure_token!
+
+    cred_json = IO.popen(['vault', 'read', '-format=json', @config.fetch(:path)], 'r', &:read)
+    exitstatus = $?
+    unless exitstatus.success?
+      raise "vault read failed"
+    end
+    JSON.parse(cred_json)
+  end
+end
+
+cred = VaultAwsCreds.run
+if $0 == __FILE__
+  if ARGV.empty?
+    puts({
+      'AWS_ACCESS_KEY_ID' => cred['data']['access_key'],
+      'AWS_SECRET_ACCESS_KEY' => cred['data']['secret_key'],
+      'AWS_SESSION_TOKEN' => cred['data']['security_token'],
+    }.to_json)
+  else
+    ENV['AWS_ACCESS_KEY_ID'] = cred['data']['access_key']
+    ENV['AWS_SECRET_ACCESS_KEY'] = cred['data']['secret_key']
+    ENV['AWS_SESSION_TOKEN'] = cred['data']['security_token']
+    exec(*ARGV)
+  end
+else
+  ENV['AWS_ACCESS_KEY_ID'] = cred['data']['access_key']
+  ENV['AWS_SECRET_ACCESS_KEY'] = cred['data']['secret_key']
+  ENV['AWS_SESSION_TOKEN'] = cred['data']['security_token']
+end

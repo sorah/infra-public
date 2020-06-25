@@ -2,7 +2,8 @@ node.reverse_merge!(
   acmesmith_fetch: {
     common_names: {}, # owner: group:
     store_path: '/etc/ssl/self',
-    aws_use_access_key: !node[:hocho_ec2],
+    aws_use_access_key: false,
+    aws_use_vault: !node[:hocho_ec2],
     s3_region: 'ap-northeast-1',
     s3_bucket: 'sorah-acmesmith',
     s3_prefix: 'private-prod/',
@@ -18,6 +19,7 @@ if node[:acmesmith_fetch][:aws_use_access_key] && !(node[:acmesmith_fetch][:aws_
 end
 
 include_cookbook 'prometheus-textfile-certificate'
+include_cookbook 'vault-aws-creds'
 include_cookbook 'aws-sdk-ruby'
 
 remote_file '/usr/bin/nkmi-acmesmith-fetch' do
