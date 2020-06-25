@@ -8,8 +8,11 @@ config = JSON.parse(File.read('/etc/prometheus-textfile-certificate.json'))
 files = config['glob_paths'].flat_map { |_| Dir[_] }
 
 lines = files.flat_map do |path|
-  File.read(path).lines.slice_before(/^-----BEGIN CERTIFICATE-----$/).flat_map do |pem_lines|
-    cert = OpenSSL::X509::Certificate.new(pem_lines.join)
+  File.read(path).lines.slice_before(/^-----BEGIN CERTIFICATE-----$/).map do |pem_lines|
+    OpenSSL::X509::Certificate.new(pem_lines.join)
+  rescue OpenSSL::X509::CertificateError
+    next nil
+  end.compact.uniq(&:subject).flat_map do |cert|
     ca = cert.extensions.find{ |_| _.oid == 'basicConstraints' }&.value&.include?('CA:TRUE')
 
     labels = %(file="#{path}", subject="#{cert.subject.to_s.gsub(/"/, '\"').gsub(/[\r\n]/,'').gsub(/\\/,"\\\\")}")
@@ -19,8 +22,6 @@ lines = files.flat_map do |path|
       %(node_certificate_not_after{#{labels}} #{cert.not_after.to_f}),
       %(node_certificate_lifetime{#{labels}} #{cert.not_after.to_f - cert.not_before.to_f}),
     ]
-  rescue OpenSSL::X509::CertificateError
-    next nil
   end
 rescue Errno::EPERM, Errno::EACCES
   next nil
