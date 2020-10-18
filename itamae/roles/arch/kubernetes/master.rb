@@ -58,7 +58,7 @@ include_role 'kubernetes::etcd'
 
 node.reverse_merge!(
   kubernetes: {
-    version: '1.17.4',
+    version: '1.19.3',
     apiserver: {
       # oidc_client_id: ,
       # oidc_issuer_url: ,
