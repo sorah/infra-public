@@ -111,7 +111,8 @@ include_role 'kubernetes::logging'
 ##
 
 include_cookbook 'docker'
-package 'kubernetes-bin' # TODO: kubelet-bin
+package 'kubelet-bin'
+package 'kubectl-bin'
 package 'ebtables'
 package 'ethtool'
 
