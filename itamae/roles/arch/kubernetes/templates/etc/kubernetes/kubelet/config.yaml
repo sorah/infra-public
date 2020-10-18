@@ -40,4 +40,4 @@ runtimeRequestTimeout: 0s
 staticPodPath: /etc/kubernetes/manifests
 
 cgroupDriver: systemd
-resolverConfig: /run/systemd/resolve/resolv.conf
+resolvConf: /run/systemd/resolve/resolv.conf
