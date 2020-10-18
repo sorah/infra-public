@@ -1,0 +1,120 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    component: kube-apiserver
+    tier: control-plane
+  name: kube-apiserver
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    - kube-apiserver
+    # - --advertise-address=10.3.0.180
+    - --allow-privileged=true
+    - --authorization-mode=Node,RBAC
+    - --client-ca-file=/etc/ssl/self/k8s-apiserver/trust.pem
+    - --enable-admission-plugins=NodeRestriction
+    - --enable-bootstrap-token-auth=false
+    - --etcd-cafile=/etc/ssl/self/k8s-etcd-kube/trust.pem
+    - --etcd-certfile=/etc/ssl/self/k8s-etcd-kube/fullchain.pem
+    - --etcd-keyfile=/etc/ssl/self/k8s-etcd-kube/key.pem
+    - --etcd-servers=https://<%= node[:kubernetes].fetch(:cluster_name) %>.k8s-etcd.nkmi.me:2379
+    # - --insecure-port=0
+    - --kubelet-client-certificate=/etc/ssl/self/k8s-apiserver-kubelet-client/fullchain.pem
+    - --kubelet-client-key=/etc/ssl/self/k8s-apiserver-kubelet-client/key.pem
+    - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+    - --oidc-client-id=<%= node[:kubernetes][:apiserver].fetch(:oidc_client_id) %>
+    - --oidc-issuer-url=<%= node[:kubernetes][:apiserver].fetch(:oidc_issuer_url) %>
+    - --oidc-username-claim=upn
+    # - --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt
+    # - --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key
+    # - --requestheader-allowed-names=front-proxy-client
+    # - --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt
+    # - --requestheader-extra-headers-prefix=X-Remote-Extra-
+    # - --requestheader-group-headers=X-Remote-Group
+    # - --requestheader-username-headers=X-Remote-User
+    - --secure-port=6443
+    - --tls-cert-file=/etc/ssl/self/k8s-apiserver/fullchain.pem
+    - --tls-private-key-file=/etc/ssl/self/k8s-apiserver/key.pem
+    - --service-account-key-file=/etc/kubernetes/apiserver/sa.pub
+    - --service-account-signing-key-file=/etc/kubernetes/apiserver/sa.key
+    - --service-account-issuer=<%= node[:kubernetes][:apiserver].fetch(:service_account_issuer) %>
+    - --service-cluster-ip-range=<%= node[:kubernetes].fetch(:service_cluster_ip_range) %>
+    - --encryption-provider-config=/etc/kubernetes/apiserver/encryption.yaml
+    image: k8s.gcr.io/kube-apiserver:v<%= node[:kubernetes].fetch(:version) %>
+    imagePullPolicy: IfNotPresent
+    livenessProbe:
+      failureThreshold: 8
+      httpGet:
+        # host: 10.3.0.180
+        path: /healthz
+        port: 6443
+        scheme: HTTPS
+      initialDelaySeconds: 15
+      timeoutSeconds: 15
+    name: kube-apiserver
+    resources:
+      requests:
+        cpu: 250m
+    volumeMounts:
+      - mountPath: /etc/ssl/certs
+        name: ca-certs
+        readOnly: true
+      - mountPath: /etc/ca-certificates
+        name: etc-ca-certificates
+        readOnly: true
+      - mountPath: /usr/share/ca-certificates
+        name: usr-share-ca-certificates
+        readOnly: true
+
+      - mountPath: /etc/kubernetes/apiserver
+        name: etc-apiserver
+        readOnly: true
+
+      - mountPath: /etc/ssl/self/k8s-etcd-kube
+        name: certs-k8s-etcd-kube
+        readOnly: true
+      - mountPath: /etc/ssl/self/k8s-apiserver-kubelet-client
+        name: certs-k8s-apiserver-kubelet-client
+        readOnly: true
+      - mountPath: /etc/ssl/self/k8s-apiserver
+        name: certs-k8s-apiserver
+        readOnly: true
+  hostNetwork: true
+  priorityClassName: system-cluster-critical
+  volumes:
+    - hostPath:
+        path: /etc/ssl/certs
+        type: DirectoryOrCreate
+      name: ca-certs
+    - hostPath:
+        path: /etc/ca-certificates
+        type: DirectoryOrCreate
+      name: etc-ca-certificates
+    - hostPath:
+        path: /usr/share/ca-certificates
+        type: DirectoryOrCreate
+      name: usr-share-ca-certificates
+
+    - hostPath:
+        path: /etc/kubernetes/apiserver
+        type: DirectoryOrCreate
+      name: etc-apiserver
+
+    - hostPath:
+        path: /etc/ssl/self/k8s-etcd-kube
+        type: DirectoryOrCreate
+      name: certs-k8s-etcd-kube
+    - hostPath:
+        path: /etc/ssl/self/k8s-apiserver-kubelet-client
+        type: DirectoryOrCreate
+      name: certs-k8s-apiserver-kubelet-client
+    - hostPath:
+        path: /etc/ssl/self/k8s-apiserver
+        type: DirectoryOrCreate
+      name: certs-k8s-apiserver
+
+
+status: {}

@@ -80,9 +80,13 @@ units_to_restart = []
   args << "ttl=#{cert.fetch(:ttl)}" if cert[:ttl]
   args << "common_name=#{cert.fetch(:cn)}"
   args << "alt_names=#{cert.fetch(:sans).join(?,)}" if cert[:sans]
+  ips = cert.fetch(:ip_sans, [])
   if cert[:ip]
     ip = IO.popen(%w(ip -o r get 8.8.8.8), 'r', &:read).chomp.match(/src (.+?)(?: |$)/)[1]
-    args << "ip_sans=#{ip}"
+    ips << ip
+  end
+  unless ips.empty?
+    args << "ip_sans=#{ips.join(?,)}"
   end
 
   puts " * #{args.join(' ')}"

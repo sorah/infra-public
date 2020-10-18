@@ -1,0 +1,43 @@
+# https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/apis/config/types.go
+kind: KubeletConfiguration
+apiVersion: kubelet.config.k8s.io/v1beta1
+
+authentication:
+  anonymous:
+    enabled: false
+  webhook:
+    cacheTTL: 0s
+    enabled: true
+  x509:
+    clientCAFile: /etc/ssl/self/k8s-node/trust.pem
+
+authorization:
+  mode: Webhook
+  webhook:
+    cacheAuthorizedTTL: 0s
+    cacheUnauthorizedTTL: 0s
+
+clusterDomain: '<%= node[:kubernetes].fetch(:cluster_name) %>.k.nkmi.me'
+clusterDNS:
+  - 10.96.0.10
+
+cpuManagerReconcilePeriod: 0s
+evictionPressureTransitionPeriod: 0s
+fileCheckFrequency: 0s
+httpCheckFrequency: 0s
+imageMinimumGCAge: 0s
+streamingConnectionIdleTimeout: 0s
+syncFrequency: 0s
+volumeStatsAggPeriod: 0s
+
+healthzBindAddress: 127.0.0.1
+healthzPort: 10248
+nodeStatusReportFrequency: 0s
+nodeStatusUpdateFrequency: 0s
+
+rotateCertificates: false
+runtimeRequestTimeout: 0s
+staticPodPath: /etc/kubernetes/manifests
+
+cgroupDriver: systemd
+resolverConfig: /run/systemd/resolve/resolv.conf

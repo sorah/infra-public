@@ -7,8 +7,10 @@ node.reverse_merge!(
   kubernetes: {
     master: false,
     cluster_name: 'aperture',
-    master_vault_role_id: node[:secrets][:'vault_approle.role_id.k8s_aperture_master'],
-    node_vault_role_id: node[:secrets][:'vault_approle.role_id.k8s_aperture_node'],
+    # cluster_cidr: '',
+    node_cidr_mask_size: 24,
+    # service_cluster_ip_range: '10.96.0.0/18',
+    # apiserver_service_ip: '10.96.0.1',
   },
 )
 # include_role 'kubetest::master-prelude' if node[:kubernetes][:master]
@@ -20,13 +22,29 @@ node.reverse_merge!(
   },
   vault_cert: {
     tls: {
-      name: 'k8s-aperture',
+      name: "k8s-#{node[:kubernetes].fetch(:cluster_name)}",
     },
     # env_file: '/var/lib/vault-approle-keep/kubernetes',
     certs: {
+      node: {
+        trust_pkis: %W(pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}/g1),
+        pki: "pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}/g1",
+        role: 'node',
+        trust_ca_file: '/etc/ssl/self/k8s-node/trust.pem',
+        ca_file: '/etc/ssl/self/k8s-node/ca.pem',
+        cert_file: '/etc/ssl/self/k8s-node/cert.pem',
+        fullchain_file: '/etc/ssl/self/k8s-node/fullchain.pem',
+        key_file: '/etc/ssl/self/k8s-node/key.pem',
+        owner: 'root',
+        group: 'root',
+        cn: "system:node:#{node[:hostname]}",
+        sans: ["system:node:#{node[:hostname]}"],
+        units_to_reload: %w(kubelet.service),
+        threshold_days: 7,
+      },
       etcd: {
-        trust_pkis: %w(pki/k8s-aperture-etcd/g2 pki/k8s-aperture-etcd/g1),
-        pki: 'pki/k8s-aperture-etcd/g2',
+        trust_pkis: %W(pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}-etcd/g2),
+        pki: "pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}-etcd/g2",
         role: 'node',
         trust_ca_file: '/etc/ssl/self/k8s-etcd/trust.pem',
         ca_file: '/etc/ssl/self/k8s-etcd/ca.pem',
@@ -55,6 +73,12 @@ end
 
 ##
 
+directory '/etc/ssl/self/k8s-node' do
+  owner 'root'
+  group 'root'
+  mode  '0755'
+end
+
 directory '/etc/ssl/self/k8s-etcd' do
   owner 'root'
   group 'root'
@@ -64,10 +88,6 @@ end
 include_cookbook 'vault-approle-keep'
 include_cookbook 'vault-cert'
 
-#vault_approle_keep 'kubernetes' do
-#  role_id node[:kubernetes][:master] ? node[:kubernetes][:master_vault_role_id] : node[:kubernetes][:node_vault_role_id]
-#end
-
 ##
 
 include_role 'kubernetes::routing'
@@ -76,7 +96,7 @@ include_role 'kubernetes::logging'
 ##
 
 include_cookbook 'docker'
-package 'kubernetes-bin'
+package 'kubernetes-bin' # TODO: kubelet-bin
 package 'ebtables'
 package 'ethtool'
 
@@ -99,13 +119,17 @@ directory '/etc/kubernetes/apiserver' do
   mode  '0755'
 end
 
-directory '/etc/kubernetes/manifests' do
+directory '/etc/kubernetes/kubelet' do
   owner 'root'
   group 'root'
   mode  '0755'
 end
 
-
+directory '/etc/kubernetes/manifests' do
+  owner 'root'
+  group 'root'
+  mode  '0755'
+end
 
 ##
 
@@ -114,6 +138,20 @@ template "/etc/systemd/system/kubelet.service" do
   group 'root'
   mode  '0644'
   notifies :run, 'execute[systemctl daemon-reload]'
+end
+
+template "/etc/kubernetes/kubelet/kubeconfig.yaml" do
+  owner 'root'
+  group 'root'
+  mode  '0644'
+  notifies :reload, 'service[kubelet.service]'
+end
+
+template "/etc/kubernetes/kubelet/config.yaml" do
+  owner 'root'
+  group 'root'
+  mode  '0644'
+  notifies :reload, 'service[kubelet.service]'
 end
 
 ##
@@ -141,6 +179,6 @@ end
   end
 end
 
-service 'kubelet' do
+service 'kubelet.service' do
   action [:enable]
 end
