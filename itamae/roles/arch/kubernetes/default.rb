@@ -65,11 +65,26 @@ node.reverse_merge!(
 include_role 'base'
 include_role 'kubernetes::master' if node[:kubernetes][:master]
 
+###
+# FIXME: Workaround for https://github.com/kubernetes/kubernetes/issues/94335
+remote_file '/etc/systemd/system/var-lib-kubelet.mount' do
+  owner 'root'
+  group 'root'
+  mode  '0644'
+  notifies :run, 'execute[systemctl daemon-reload]'
+end
+
+service 'var-lib-kubelet.mount' do
+  action [:enable, :start]
+end
+###
+
 directory '/etc/kubernetes' do
   owner 'root'
   group 'root'
   mode  '0755'
 end
+
 
 ##
 

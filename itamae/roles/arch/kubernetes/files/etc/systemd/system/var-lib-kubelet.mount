@@ -1,0 +1,16 @@
+[Unit]
+Description=/var/lib/kubelet bind mount (workaround)
+Documentation=https://github.com/kubernetes/kubernetes/issues/94335
+BindsTo=-.mount
+After=-.mount
+Before=kubelet.service
+
+[Mount]
+What=/var/lib/kubelet
+Where=/var/lib/kubelet
+Type=none
+Options=defaults,bind
+
+[Install]
+WantedBy=multi-user.service
+
