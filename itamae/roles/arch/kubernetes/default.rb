@@ -17,6 +17,7 @@ node.reverse_merge!(
 node.reverse_merge!(
   docker: {
     daemon_config: {
+      'storage-driver' => 'btrfs',
       'exec-opts' => ["native.cgroupdriver=systemd"],
     },
   },
