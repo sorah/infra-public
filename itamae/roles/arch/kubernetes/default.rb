@@ -196,6 +196,8 @@ end
   end
 end
 
+include_cookbook 'ipvs'
+
 service 'kubelet.service' do
   action [:enable]
 end
