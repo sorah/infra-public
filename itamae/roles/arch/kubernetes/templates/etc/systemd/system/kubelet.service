@@ -11,6 +11,9 @@ ExecStart=/usr/bin/kubelet \
           --config=/etc/kubernetes/kubelet/config.yaml \
           --kubeconfig=/etc/kubernetes/kubelet/kubeconfig.yaml \
           --network-plugin=cni \
+<%- if node[:kubernetes][:node_local_dns] -%>
+          --cluster-dns=169.254.20.10 \
+<%- end -%>
           --pod-infra-container-image=k8s.gcr.io/pause:3.1 
 
 ExecReload=/bin/kill -HUP $MAINPID
