@@ -19,6 +19,8 @@ include_recipe './alertmanager.rb'
 include_recipe './snmp.rb'
 include_recipe './blackbox.rb'
 
+include_recipe './auth.rb'
+
 include_role 'prometheus::custom'
 
 directory '/mnt/vol/prometheus-data' do
