@@ -34,6 +34,9 @@ streamingConnectionIdleTimeout: 0s
 syncFrequency: 0s
 volumeStatsAggPeriod: 0s
 
+tlsCertFile: /var/lib/machineidentity/identity.crt
+tlsPrivateKeyFile: /var/lib/machineidentity/key.pem
+
 healthzBindAddress: 127.0.0.1
 healthzPort: 10248
 nodeStatusReportFrequency: 0s

@@ -39,7 +39,7 @@ node[:vault_cert][:certs][:kube_controller_manager] = node[:vault_cert][:certs][
   fullchain_file: '/etc/ssl/self/k8s-kube-controller-manager/fullchain.pem',
   key_file: '/etc/ssl/self/k8s-kube-controller-manager/key.pem',
   cn: "system:kube-controller-manager",
-  sans: ["system:kube-controller-manager"],
+  sans: ["system:kube-controller-manager", "kube-controller-manager.kube-system.svc.#{node[:kubernetes].fetch(:cluster_name)}.k.nkmi.me"],
 )
 node[:vault_cert][:certs][:kube_scheduler] = node[:vault_cert][:certs][:node].merge(
   role: 'kube-scheduler',
@@ -49,7 +49,7 @@ node[:vault_cert][:certs][:kube_scheduler] = node[:vault_cert][:certs][:node].me
   fullchain_file: '/etc/ssl/self/k8s-kube-scheduler/fullchain.pem',
   key_file: '/etc/ssl/self/k8s-kube-scheduler/key.pem',
   cn: "system:kube-scheduler",
-  sans: ["system:kube-scheduler"],
+  sans: ["system:kube-scheduler", "kube-scheduler.kube-system.svc.#{node[:kubernetes].fetch(:cluster_name)}.k.nkmi.me"],
 )
 
 

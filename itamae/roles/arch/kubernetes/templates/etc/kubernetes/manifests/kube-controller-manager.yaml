@@ -2,9 +2,12 @@ apiVersion: v1
 kind: Pod
 metadata:
   creationTimestamp: null
+  annotations:
+    prometheus.nkmi.me/scrape-port-secure: '10257'
   labels:
     component: kube-controller-manager
     tier: control-plane
+    prometheus.nkmi.me/scrape: 'true'
   name: kube-controller-manager
   namespace: kube-system
 spec:
@@ -15,7 +18,9 @@ spec:
     - --authentication-kubeconfig=/etc/kubernetes/controller-manager/kubeconfig.yaml
     - --authorization-kubeconfig=/etc/kubernetes/controller-manager/kubeconfig.yaml
     - --kubeconfig=/etc/kubernetes/controller-manager/kubeconfig.yaml
-    - --bind-address=127.0.0.1
+    # - --bind-address=127.0.0.1
+    - --tls-cert-file=/etc/ssl/self/k8s-kube-controller-manager/fullchain.pem
+    - --tls-private-key-file=/etc/ssl/self/k8s-kube-controller-manager/key.pem
     - --cluster-cidr=<%= node[:kubernetes].fetch(:cluster_cidr) %>
     #- --cluster-signing-cert-file=/etc/kubernetes/pki/ca.crt
     #- --cluster-signing-key-file=/etc/kubernetes/pki/ca.key
