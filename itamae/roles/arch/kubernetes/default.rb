@@ -173,6 +173,10 @@ end
 
 ##
 
+include_role 'kubernetes::topolvm' if node[:kubernetes][:topolvm]
+
+##
+
 package 'cni-plugins'
 
 directory '/opt/cni' do

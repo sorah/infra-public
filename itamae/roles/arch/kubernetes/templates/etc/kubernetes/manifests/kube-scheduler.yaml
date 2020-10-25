@@ -15,7 +15,7 @@ spec:
     - --authorization-kubeconfig=/etc/kubernetes/scheduler/kubeconfig.yaml
     - --bind-address=127.0.0.1
     - --kubeconfig=/etc/kubernetes/scheduler/kubeconfig.yaml
-    - --leader-elect=true
+    - --config=/etc/kubernetes/scheduler/scheduler.yaml
     image: k8s.gcr.io/kube-scheduler:v<%= node[:kubernetes].fetch(:version) %>
     imagePullPolicy: IfNotPresent
     livenessProbe:

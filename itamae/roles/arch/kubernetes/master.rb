@@ -59,6 +59,9 @@ include_role 'kubernetes::etcd'
 node.reverse_merge!(
   kubernetes: {
     version: '1.19.3',
+    scheduler: {
+      # topolvm: false
+    },
     apiserver: {
       # oidc_client_id: ,
       # oidc_issuer_url: ,
@@ -158,6 +161,12 @@ directory '/etc/kubernetes/scheduler' do
   owner 'root'
   group 'root'
   mode  '0755'
+end
+
+template "/etc/kubernetes/scheduler/scheduler.yaml" do
+  owner 'root'
+  group 'root'
+  mode  '0644'
 end
 
 template "/etc/kubernetes/scheduler/kubeconfig.yaml" do
