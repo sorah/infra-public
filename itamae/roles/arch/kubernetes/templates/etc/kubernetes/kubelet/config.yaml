@@ -19,7 +19,11 @@ authorization:
 
 clusterDomain: '<%= node[:kubernetes].fetch(:cluster_name) %>.k.nkmi.me'
 clusterDNS:
+<%- if node[:kubernetes][:node_local_dns] -%>
+  - 169.254.20.10
+<%- else -%>
   - 10.96.0.10
+<%- end -%>
 
 cpuManagerReconcilePeriod: 0s
 evictionPressureTransitionPeriod: 0s
