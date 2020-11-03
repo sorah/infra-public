@@ -1,5 +1,5 @@
 include_cookbook 'http-user'
-package 'envoyproxy'
+package 'envoyproxy-bin'
 
 remote_file '/usr/bin/envoyproxy-hot-restarter.py' do
   owner 'root'
