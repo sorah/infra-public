@@ -66,6 +66,11 @@ node.reverse_merge!(
 include_role 'base'
 include_role 'kubernetes::master' if node[:kubernetes][:master]
 
+include_cookbook 'ipvs'
+include_cookbook 'targetcli'
+package 'open-iscsi'
+include_cookbook 'nfs'
+
 ###
 # FIXME: Workaround for https://github.com/kubernetes/kubernetes/issues/94335
 remote_file '/etc/systemd/system/var-lib-kubelet.mount' do
@@ -199,8 +204,6 @@ end
     to "/usr/lib/cni/#{_}"
   end
 end
-
-include_cookbook 'ipvs'
 
 service 'kubelet.service' do
   action [:enable]
