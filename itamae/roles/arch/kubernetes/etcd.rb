@@ -1,4 +1,6 @@
-node[:vault_cert][:certs][:etcd_server] = node[:vault_cert][:certs][:etcd].merge(
+node[:vault_cert][:certs][:etcd_server] = {
+  trust_pkis: %W(pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}-etcd/g2),
+  pki: "pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}-etcd/g2",
   role: 'master',
   trust_ca_file: '/etc/ssl/self/k8s-etcd-server/trust.pem',
   ca_file: '/etc/ssl/self/k8s-etcd-server/ca.pem',
@@ -9,9 +11,11 @@ node[:vault_cert][:certs][:etcd_server] = node[:vault_cert][:certs][:etcd].merge
   sans: ["#{node[:kubernetes].fetch(:cluster_name)}.k8s-etcd.nkmi.me", "#{node[:hostname]}.#{node[:kubernetes].fetch(:cluster_name)}.k8s-etcd.nkmi.me"],
   owner: 'etcd',
   group: 'etcd',
-)
+  units_to_reload: %w(),
+  threshold_days: 7,
+}
 
-node[:vault_cert][:certs][:etcd_kube] = node[:vault_cert][:certs][:etcd].merge(
+node[:vault_cert][:certs][:etcd_kube] = node[:vault_cert][:certs][:etcd_server].merge(
   role: 'kube',
   trust_ca_file: '/etc/ssl/self/k8s-etcd-kube/trust.pem',
   ca_file: '/etc/ssl/self/k8s-etcd-kube/ca.pem',
