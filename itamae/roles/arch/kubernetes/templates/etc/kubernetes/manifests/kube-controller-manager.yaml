@@ -28,12 +28,11 @@ spec:
     - --controllers=*,tokencleaner
     - --leader-elect=true
     - --node-cidr-mask-size=<%= node[:kubernetes].fetch(:node_cidr_mask_size) %>
-      # - --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt
+    - --requestheader-client-ca-file=/etc/ssl/self/k8s-frontproxy/trust.pem
     - --root-ca-file=/etc/ssl/self/k8s-kube-controller-manager/trust.pem
     - --service-account-private-key-file=/etc/kubernetes/apiserver/sa.key
     - --service-cluster-ip-range=<%= node[:kubernetes].fetch(:service_cluster_ip_range) %>
     - --use-service-account-credentials=true
-    - --requestheader-client-ca-file=/etc/ssl/self/k8s-frontproxy/trust.pem
     image: k8s.gcr.io/kube-controller-manager:v<%= node[:kubernetes].fetch(:version) %>
     imagePullPolicy: IfNotPresent
     livenessProbe:
