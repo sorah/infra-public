@@ -1,0 +1,13 @@
+[Match]
+Name=lo
+
+[Network]
+
+<%- node[:loopback].fetch(:addresses).each_with_index do |addr0, i| -%>
+<%- addr = addr0.include?('/') ? addr0 : (addr0.include?(':') ? "#{addr0}/128" : "#{addr0}/32") -%>
+[Address]
+Label=lo:<%= i+1 %>
+Address=<%= addr %>
+<%- end -%>
+
+[Route]
