@@ -33,6 +33,7 @@ spec:
     - --service-account-private-key-file=/etc/kubernetes/apiserver/sa.key
     - --service-cluster-ip-range=<%= node[:kubernetes].fetch(:service_cluster_ip_range) %>
     - --use-service-account-credentials=true
+    - --requestheader-client-ca-file=/etc/ssl/self/k8s-frontproxy/trust.pem
     image: k8s.gcr.io/kube-controller-manager:v<%= node[:kubernetes].fetch(:version) %>
     imagePullPolicy: IfNotPresent
     livenessProbe:
@@ -57,6 +58,9 @@ spec:
       readOnly: true
     - mountPath: /etc/ssl/self/k8s-kube-controller-manager
       name: certs
+      readOnly: true
+    - mountPath: /etc/ssl/self/k8s-frontproxy/trust.pem
+      name: frontproxy-ca
       readOnly: true
 
     - mountPath: /usr/libexec/kubernetes/kubelet-plugins/volume/exec
@@ -85,6 +89,10 @@ spec:
       path: /etc/ssl/self/k8s-kube-controller-manager
       type: DirectoryOrCreate
     name: certs
+  - hostPath:
+      path: /etc/ssl/self/k8s-frontproxy/trust.pem
+      type: File
+    name: frontproxy-ca
   - hostPath:
       path: /usr/libexec/kubernetes/kubelet-plugins/volume/exec
       type: DirectoryOrCreate

@@ -52,6 +52,23 @@ node[:vault_cert][:certs][:kube_scheduler] = node[:vault_cert][:certs][:node].me
   sans: ["system:kube-scheduler", "kube-scheduler.kube-system.svc.#{node[:kubernetes].fetch(:cluster_name)}.k.nkmi.me"],
 )
 
+node[:vault_cert][:certs][:frontproxy_client] = {
+  trust_pkis: %W(pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}-frontproxy/g1),
+  pki: "pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}-frontproxy/g1",
+  role: 'master',
+  trust_ca_file: '/etc/ssl/self/k8s-frontproxy/trust.pem',
+  ca_file: '/etc/ssl/self/k8s-frontproxy/ca.pem',
+  cert_file: '/etc/ssl/self/k8s-frontproxy/cert.pem',
+  fullchain_file: '/etc/ssl/self/k8s-frontproxy/fullchain.pem',
+  key_file: '/etc/ssl/self/k8s-frontproxy/key.pem',
+  cn: "aperture.k8s-frontproxy.nkmi.me",
+  sans: ["#{node[:hostname]}.aperture.k8s-frontproxy.nkmi.me"],
+  owner: 'root',
+  group: 'root',
+  units_to_reload: %w(),
+  threshold_days: 7,
+}
+
 
 
 include_role 'kubernetes::etcd'
@@ -111,6 +128,12 @@ directory '/etc/ssl/self/k8s-kube-controller-manager' do
 end
 
 directory '/etc/ssl/self/k8s-kube-scheduler' do
+  owner 'root'
+  group 'root'
+  mode  '0755'
+end
+
+directory '/etc/ssl/self/k8s-frontproxy' do
   owner 'root'
   group 'root'
   mode  '0755'

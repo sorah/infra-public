@@ -28,13 +28,13 @@ spec:
     - --oidc-client-id=<%= node[:kubernetes][:apiserver].fetch(:oidc_client_id) %>
     - --oidc-issuer-url=<%= node[:kubernetes][:apiserver].fetch(:oidc_issuer_url) %>
     - --oidc-username-claim=upn
-    # - --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt
-    # - --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key
-    # - --requestheader-allowed-names=front-proxy-client
-    # - --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt
-    # - --requestheader-extra-headers-prefix=X-Remote-Extra-
-    # - --requestheader-group-headers=X-Remote-Group
-    # - --requestheader-username-headers=X-Remote-User
+    - --proxy-client-cert-file=/etc/ssl/self/k8s-frontproxy/fullchain.pem
+    - --proxy-client-key-file=/etc/ssl/self/k8s-frontproxy/key.pem
+    - --requestheader-allowed-names=<%= node[:kubernetes].fetch(:cluster_name) %>.k8s-frontproxy.nkmi.me
+    - --requestheader-client-ca-file=/etc/ssl/self/k8s-frontproxy/trust.pem
+    - --requestheader-extra-headers-prefix=X-Remote-Extra-
+    - --requestheader-group-headers=X-Remote-Group
+    - --requestheader-username-headers=X-Remote-User
     - --secure-port=6443
     - --tls-cert-file=/etc/ssl/self/k8s-apiserver/fullchain.pem
     - --tls-private-key-file=/etc/ssl/self/k8s-apiserver/key.pem
@@ -82,6 +82,10 @@ spec:
       - mountPath: /etc/ssl/self/k8s-apiserver
         name: certs-k8s-apiserver
         readOnly: true
+      - mountPath: /etc/ssl/self/k8s-frontproxy
+        name: certs-k8s-frontproxy
+        readOnly: true
+
   hostNetwork: true
   priorityClassName: system-cluster-critical
   volumes:
@@ -115,6 +119,9 @@ spec:
         path: /etc/ssl/self/k8s-apiserver
         type: DirectoryOrCreate
       name: certs-k8s-apiserver
-
+    - hostPath:
+        path: /etc/ssl/self/k8s-frontproxy
+        type: DirectoryOrCreate
+      name: certs-k8s-frontproxy
 
 status: {}
