@@ -33,6 +33,7 @@ spec:
     - --service-account-private-key-file=/etc/kubernetes/apiserver/sa.key
     - --service-cluster-ip-range=<%= node[:kubernetes].fetch(:service_cluster_ip_range) %>
     - --use-service-account-credentials=true
+    - '--feature-gates=EphemeralContainers=true'
     image: k8s.gcr.io/kube-controller-manager:v<%= node[:kubernetes].fetch(:version) %>
     imagePullPolicy: IfNotPresent
     livenessProbe:
