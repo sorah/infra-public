@@ -1,5 +1,17 @@
 include_cookbook 'loopback'
 
+remote_file "/etc/modules-load.d/fou.conf" do
+  owner 'root'
+  group 'root'
+  mode  '0644'
+end
+
+remote_file "/etc/sysctl.d/90-fou.conf" do
+  owner 'root'
+  group 'root'
+  mode  '0644'
+end
+
 remote_file "/usr/bin/nkmi-setup-gue-receive" do
   owner 'root'
   group 'root'

@@ -1,14 +1,21 @@
-#!/bin/bash -x
+#!/bin/bash -xe
 v4_iface=
 while [ -z "$v4_iface" ]; do
   v4_iface="$(ip -o route get 8.8.8.8|grep --only-matching 'dev [^ ]\+'|cut -d' ' -f2)"
   sleep 1
 done
+
+v6_iface="${v4_iface}"
+#v6_iface="$(ip -o route get 2001:4860:4860::8888|grep --only-matching 'dev [^ ]\+'|cut -d' ' -f2)"
+
+# FIXME: Use `ip -6` https://kernel.googlesource.com/pub/scm/network/iproute2/iproute2/+/9e5d246877ec14ea159ad1b2a495aa9475fa6502
+ip fou add port 5555 gue
+ip fou add port 5555 gue -6
+
 ip link add lbtun4 type ipip dev "$v4_iface" local any remote any encap gue encap-dport 5555
 echo 0 > /proc/sys/net/ipv4/conf/lbtun4/rp_filter
 
-v6_iface="$(ip -6 -o route get 2001:4860:4860::8888|grep --only-matching 'dev [^ ]\+'|cut -d' ' -f2)"
-ip link add lbtun6 type ip6tnl mode ip6ip6 dev "$v6_iface" local any remote any encap gue encap-dport 5555
+ip link add lbtun6 type ip6tnl dev "$v6_iface" local any remote any encap gue encap-dport 5555
 
-ip fou add port 5555 gue
-ip fou add port 5555 gue -6
+ip link set lbtun4 up
+ip link set lbtun6 up
