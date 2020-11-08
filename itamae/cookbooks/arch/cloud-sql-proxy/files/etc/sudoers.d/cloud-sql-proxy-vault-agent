@@ -1,0 +1,4 @@
+# vim: ft=sudoers
+Cmnd_Alias CLOUD_SQL_PROXY_RESTART_CMD = /usr/sbin/nkmi-cloud-sql-proxy-rekey
+vault ALL = (root) NOPASSWD: CLOUD_SQL_PROXY_RESTART_CMD
+Defaults!CLOUD_SQL_PROXY_RESTART_CMD !requiretty

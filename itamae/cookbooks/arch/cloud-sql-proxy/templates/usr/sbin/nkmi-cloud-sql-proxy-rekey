@@ -1,0 +1,6 @@
+#!/bin/bash -xe
+cp -p /var/lib/cloud-sql-proxy/credentials.vault.json /var/lib/cloud-sql-proxy/credentials.vault-new.json
+chown cloudsql:cloudsql /var/lib/cloud-sql-proxy/credentials.vault-new.json
+chmod 0640 /var/lib/cloud-sql-proxy/credentials.vault-new.json
+mv /var/lib/cloud-sql-proxy/credentials.vault-new.json /var/lib/cloud-sql-proxy/credentials.json
+systemctl restart cloud-sql-proxy.service || :
