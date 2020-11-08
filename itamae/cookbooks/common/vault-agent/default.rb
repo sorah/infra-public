@@ -27,6 +27,7 @@ node.reverse_merge!(
         cache: {
           use_auto_auth_token: true,
         },
+        template: [*(node.dig(:vault, :agent, :templates)&.values || [])],
       },
     },
   },
@@ -63,6 +64,7 @@ file "/etc/vault-agent.hcl" do
   owner 'vault'
   group 'root'
   mode  '0600'
+  notifies :reload, 'service[vault-agent.service]'
 end
 
 template "/etc/systemd/system/vault-agent.service" do

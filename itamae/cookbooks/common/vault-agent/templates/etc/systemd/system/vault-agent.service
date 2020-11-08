@@ -11,5 +11,15 @@ RuntimeDirectory=vault-agent
 User=vault
 Group=vault
 
+Restart=on-failure
+RestartSec=3s
+
+<%- if node[:vault][:agent][:memory_max] -%>
+MemoryMax=<%= node[:vault][:agent][:memory_max] %>
+<%- end -%>
+<%- if node[:vault][:agent][:memory_limit] -%>
+MemoryLimit=<%= node[:vault][:agent][:memory_limit] %>
+<%- end -%>
+
 [Install]
 WantedBy=multi-user.target
