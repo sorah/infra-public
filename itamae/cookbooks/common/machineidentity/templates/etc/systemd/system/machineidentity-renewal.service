@@ -1,6 +1,6 @@
 [Unit]
 Description=machineidentity-renewal
-After=network.target network-online.target
+After=network.target network-online.target machineidentity-bootstrap.service
 ConditionPathExists=/var/lib/machineidentity/stage/identity.crt
 StartLimitIntervalSec=0
 

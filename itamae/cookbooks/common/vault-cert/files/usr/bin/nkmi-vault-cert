@@ -131,10 +131,10 @@ end
 puts "=> Notifying updates"
 units_to_reload.uniq.each do |unit|
   puts " * systemctl reload #{unit}"
-  system("systemctl", "reload", unit)
+  system("systemctl", "reload", "--no-block", unit)
 end
 units_to_restart.uniq.each do |unit|
   puts " * systemctl restart #{unit}"
-  system("systemctl", "restart", unit)
+  system("systemctl", "try-restart", unit)
 end
 

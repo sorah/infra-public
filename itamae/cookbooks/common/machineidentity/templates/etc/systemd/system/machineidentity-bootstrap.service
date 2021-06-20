@@ -1,0 +1,17 @@
+[Unit]
+Description=machineidentity-bootstrap
+After=network.target network-online.target
+ConditionPathExists=!/var/lib/machineidentity/identity.crt
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/machineidentity-bootstrap-ec2signer
+
+Environment=STEPPATH=/var/lib/machineidentity/step
+
+User=machineidentity
+Group=machineidentity
+
+[Install]
+WantedBy=multi-user.target

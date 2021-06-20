@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+require 'aws-sdk-lambda'
+require 'aws-sigv4'
+require 'base64'
+require 'open-uri'
+
+config = JSON.parse(File.read('/etc/machineidentity.json'))
+region = URI.open('http://169.254.169.254/latest/meta-data/placement/region', 'r', &:read).chomp
+
+endpoint =  'https://sts.amazonaws.com/'
+body = 'Action=GetCallerIdentity&Version=2011-06-15'
+
+req_headers = {
+  'User-Agent' => 'machineidentity-bootstrap-ec2signer', 
+  'Content-Type' => 'application/x-www-form-urlencoded; charset=utf-8'
+}
+
+sig_headers = Aws::Sigv4::Signer.new(
+  service: 'sts',
+  region: 'us-east-1',
+  credentials_provider: Aws::InstanceProfileCredentials.new,
+).sign_request(
+  http_method: 'POST',
+  url: 'https://sts.amazonaws.com/',
+  headers: req_headers,
+  body: body,
+).headers
+
+payload = {
+  region: region,
+  method: 'POST',
+  url: endpoint,
+  headers: req_headers.merge(sig_headers),
+  body: body,
+}
+
+@lambda = Aws::Lambda::Client.new(region: region)
+res =  @lambda.invoke(function_name: config.fetch('ec2signer_lambda_function_name'), payload: payload.to_json)
+p res
+json = JSON.parse(res.payload.read)
+
+p ok: json['ok'], payload: json['payload']
+raise "not ok" unless json.fetch('ok')
+
+ENV["CA_URL"] = config.fetch('ca_url')
+ENV["FINGERPRINT"] = config.fetch('fingerprint')
+exec "/usr/bin/machineidentity-bootstrap", "--token", json.fetch('token'), json.fetch('payload').fetch('sub')

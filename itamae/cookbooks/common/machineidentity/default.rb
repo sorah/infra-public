@@ -8,6 +8,7 @@ node.reverse_merge!(
   machineidentity: {
     # ca_url;
     # fingerprint:
+    ec2signer_lambda_function_name: 'step-ca-ec2-signer',
     token: node.dig(:hocho_jwt, :token),
     common_name: node.dig(:hocho_jwt, :payload, :sub),
     units_to_reload: [],
@@ -64,10 +65,23 @@ template "/usr/bin/machineidentity-renewal-notify" do
   mode  "0755"
 end
 
+remote_file "/usr/bin/machineidentity-bootstrap-ec2signer" do
+  user  "root"
+  group "root"
+  mode  "0755"
+end
+
 template "/etc/sudoers.d/machineidentity" do
   user  "root"
   group "root"
   mode  "0600"
+end
+
+template "/etc/systemd/system/machineidentity-bootstrap.service" do
+  user  "root"
+  group "root"
+  mode  "0644"
+  notifies :run, 'execute[systemctl daemon-reload]', :immediately
 end
 
 template "/etc/systemd/system/machineidentity-renewal.service" do
@@ -75,6 +89,17 @@ template "/etc/systemd/system/machineidentity-renewal.service" do
   group "root"
   mode  "0644"
   notifies :run, 'execute[systemctl daemon-reload]', :immediately
+end
+
+template "/etc/machineidentity.json" do
+  content("#{JSON.generate(
+    ca_url: node[:machineidentity][:ca_url],
+    fingerprint: node[:machineidentity][:fingerprint],
+    ec2signer_lambda_function_name: node[:machineidentity][:ec2signer_lambda_function_name],
+  )}\n")
+  user  "root"
+  group "root"
+  mode  "0644"
 end
 
 need_bootstrap = !run_command("test -e /var/lib/machineidentity/identity.crt -a ! -e /var/lib/machineidentity/force-bootstrap", error: false).success?
@@ -94,7 +119,12 @@ if need_bootstrap && !node[:packer] && node[:machineidentity][:token]
     command cmd
     user "machineidentity"
   end
+end
 
+if node[:packer]
+  service "machineidentity-bootstrap.service" do
+    action [:enable]
+  end
 end
 
 service "machineidentity-renewal.service" do

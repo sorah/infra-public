@@ -4,7 +4,10 @@ STAGE=/var/lib/machineidentity/stage
 DESTDIR=/var/lib/machineidentity
 
 /usr/bin/step ca bootstrap --ca-url "${CA_URL}" --fingerprint "${FINGERPRINT}" --force
+set +x
 /usr/bin/step ca certificate "$@" ${STAGE}/identity.crt ${STAGE}/key.pem --force
+set -x
+
 rm -f /var/lib/machineidentity/force-bootstrap
 
 exec /usr/bin/machineidentity-renewal

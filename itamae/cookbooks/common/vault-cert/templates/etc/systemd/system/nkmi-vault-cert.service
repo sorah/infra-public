@@ -1,5 +1,6 @@
 [Unit]
 Description=Retrieve certificates from Vault PKI
+After=network.target network-online.target machineidentity-bootstrap.service
 
 [Service]
 Type=oneshot
@@ -10,3 +11,6 @@ ExecStart=/usr/bin/nkmi-vault-cert
 <%- if node[:vault_cert][:env_file] -%>
 EnvironmentFile=<%= node[:vault_cert][:env_file] %>
 <%- end -%>
+
+[Install]
+WantedBy=multi-user.target

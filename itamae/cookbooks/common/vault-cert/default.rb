@@ -53,3 +53,9 @@ end
 service 'nkmi-vault-cert.timer' do
   action [:enable, :start]
 end
+
+if node[:packer]
+  service 'nkmi-vault-cert.service' do
+    action [:enable]
+  end
+end
