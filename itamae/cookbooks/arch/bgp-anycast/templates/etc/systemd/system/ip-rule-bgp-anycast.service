@@ -11,4 +11,5 @@ ExecStart=/usr/bin/ip rule add to <%= ip %>/32 table <%= node[:bgp_anycast].fetc
 <%- end -%>
 RemainAfterExit=yes
 
-
+[Install]
+WantedBy=multi-user.target
