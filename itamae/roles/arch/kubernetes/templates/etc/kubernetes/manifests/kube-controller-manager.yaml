@@ -34,6 +34,11 @@ spec:
     - --service-cluster-ip-range=<%= node[:kubernetes].fetch(:service_cluster_ip_range) %>
     - --use-service-account-credentials=true
     - '--feature-gates=EphemeralContainers=true'
+<%- if node[:kubernetes][:external_cloud_provider] -%>
+    - '--cloud-provider=external'
+<%- elsif node[:kubernetes][:cloud_provider] -%>
+    - '--cloud-provider=<%= node[:kubernetes][:cloud_provider] %>'
+<%- end -%>
     image: k8s.gcr.io/kube-controller-manager:v<%= node[:kubernetes].fetch(:version) %>
     imagePullPolicy: IfNotPresent
     livenessProbe:

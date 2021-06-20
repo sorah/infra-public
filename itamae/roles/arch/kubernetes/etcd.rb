@@ -1,6 +1,6 @@
 node[:vault_cert][:certs][:etcd_server] = {
-  trust_pkis: %W(pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}-etcd/g2),
-  pki: "pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}-etcd/g2",
+  trust_pkis: %W(pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}-etcd/g#{node[:kubernetes][:pki_generations].fetch(:etcd, 1)}),
+  pki: "pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}-etcd/g#{node[:kubernetes][:pki_generations].fetch(:etcd, 1)}",
   role: 'master',
   trust_ca_file: '/etc/ssl/self/k8s-etcd-server/trust.pem',
   ca_file: '/etc/ssl/self/k8s-etcd-server/ca.pem',

@@ -48,3 +48,7 @@ staticPodPath: /etc/kubernetes/manifests
 
 cgroupDriver: systemd
 resolvConf: /run/systemd/resolve/resolv.conf
+
+<%- if node[:kubernetes][:max_pods_per_node] -%>
+maxPods: <%= node[:kubernetes][:max_pods_per_node] %>
+<%- end -%>

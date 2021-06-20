@@ -1,6 +1,7 @@
 node.reverse_merge!(
   kubernetes: {
     logging: {
+      papertrail: true,
       # papertrail_host: ,
       # papertrail_port: ,
     },

@@ -1,7 +1,7 @@
 [Unit]
 Description=Kubernetes Kubelet Server
 Documentation=https://github.com/GoogleCloudPlatform/kubernetes
-After=docker.service
+After=docker.service machineidentity-bootstrap.service nkmi-vault-cert.service nkmi-kube-autoscaling-init.service
 Requires=docker.service
 
 [Service]
@@ -12,6 +12,11 @@ ExecStart=/usr/bin/kubelet \
           --kubeconfig=/etc/kubernetes/kubelet/kubeconfig.yaml \
           --network-plugin=cni \
           --feature-gates=EphemeralContainers=true \
+<%- if node[:kubernetes][:external_cloud_provider] -%>
+          --cloud-provider=external \
+<%- elsif node[:kubernetes][:cloud_provider] -%>
+          --cloud-provider=<%= node[:kubernetes][:cloud_provider] %> \
+<%- end -%>
           --pod-infra-container-image=k8s.gcr.io/pause:3.1 
 
 ExecReload=/bin/kill -HUP $MAINPID

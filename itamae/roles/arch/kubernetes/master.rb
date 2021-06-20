@@ -53,23 +53,23 @@ node[:vault_cert][:certs][:kube_scheduler] = node[:vault_cert][:certs][:node].me
 )
 
 node[:vault_cert][:certs][:frontproxy_client] = {
-  trust_pkis: %W(pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}-frontproxy/g1),
-  pki: "pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}-frontproxy/g1",
+  trust_pkis: %W(pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}-frontproxy/g#{node[:kubernetes][:pki_generations].fetch(:frontproxy, 1)}),
+  pki: "pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}-frontproxy/g#{node[:kubernetes][:pki_generations].fetch(:frontproxy, 1)}",
   role: 'master',
   trust_ca_file: '/etc/ssl/self/k8s-frontproxy/trust.pem',
   ca_file: '/etc/ssl/self/k8s-frontproxy/ca.pem',
   cert_file: '/etc/ssl/self/k8s-frontproxy/cert.pem',
   fullchain_file: '/etc/ssl/self/k8s-frontproxy/fullchain.pem',
   key_file: '/etc/ssl/self/k8s-frontproxy/key.pem',
-  cn: "aperture.k8s-frontproxy.nkmi.me",
-  sans: ["#{node[:hostname]}.aperture.k8s-frontproxy.nkmi.me"],
+  cn: "#{node[:kubernetes].fetch(:cluster_name)}.k8s-frontproxy.nkmi.me",
+  sans: ["#{node[:hostname]}.#{node[:kubernetes].fetch(:cluster_name)}.k8s-frontproxy.nkmi.me"],
   owner: 'root',
   group: 'root',
   units_to_reload: %w(),
   threshold_days: 7,
 }
 
-
+include_cookbook 'mnt-vol' if node[:hocho_ec2]
 
 include_role 'kubernetes::etcd'
 

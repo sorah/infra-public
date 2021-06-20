@@ -1,0 +1,10 @@
+# vim: ft=systemd
+[Match]
+OriginalName=vlan* eni*
+
+[Link]
+NamePolicy=keep kernel database onboard slot path
+AlternativeNamesPolicy=database onboard slot path
+
+# amazon-vpc-eni-k8s doesn't expect change in a generated hwaddr https://github.com/aws/amazon-vpc-cni-k8s/blob/a07c423b9ccfd3e075e7f59ddec2d34ed44c4a68/cmd/routed-eni-cni-plugin/driver/driver.go#L161
+MACAddressPolicy=none

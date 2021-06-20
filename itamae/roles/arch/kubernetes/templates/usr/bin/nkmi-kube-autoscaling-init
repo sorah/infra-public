@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+require 'open-uri'
+instance_type = URI.open('http://169.254.169.254/latest/meta-data/instance-type', 'r', &:read).chomp
+region = URI.open('http://169.254.169.254/latest/meta-data/placement/region', 'r', &:read).chomp
+hostname = URI.open('http://169.254.169.254/latest/meta-data/hostname', 'r', &:read).chomp.split(?.).first
+fqdn = "#{hostname}.#{region}.compute.internal"
+
+puts "fqdn=#{fqdn}"
+system "sed", "-i", "-e", "s/__NODENAME__/#{fqdn}/g", "/etc/nkmi-vault-cert.json"
+
+
+max_pods_per_node = case instance_type
+                    when /^t3a?\.(?:nano|micro)$/
+                      4
+                    when 't3a.small'
+                      8
+                    when 't3.small'
+                      11
+                    when /^t3a?\.(?:medium)$/
+                      17
+                    when /^t3a?\.(?:large)$/
+                      35
+                    when /^t3a?\.(?:2?xlarge)$/
+                      58
+                    else
+                      4
+                    end
+
+
+puts "instance_type=#{instance_type},max_pods_per_node=#{max_pods_per_node}"
+system "sed", "-i", "-e", "s/^maxPods: .*$/maxPods: #{max_pods_per_node}/g", "/etc/kubernetes/kubelet/config.yaml"

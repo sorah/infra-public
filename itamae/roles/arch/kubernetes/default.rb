@@ -1,20 +1,34 @@
-# NOTE: the recipes in this cookbook expects kubeadm-built cluster.
-# TODO: manage static pods in recipes
-
 include_role 'kubernetes::override'
 
 node.reverse_merge!(
   kubernetes: {
     master: false,
-    cluster_name: 'aperture',
+    # cluster_name: 'aperture',
     # cluster_cidr: '',
     node_cidr_mask_size: 24,
     # service_cluster_ip_range: '10.96.0.0/18',
     # apiserver_service_ip: '10.96.0.1',
+
+    routing: true,
+    pki_generations: {},
+
+    node_name: case
+               when node[:packer]
+                 '__NODENAME__'
+               when (node[:hocho_ec2] && node[:kubernetes][:cloud_provider] == 'aws')
+                 node[:hocho_ec2].fetch(:private_dns_name) 
+               else
+                 node[:hostname]
+               end
   },
 )
 # include_role 'kubetest::master-prelude' if node[:kubernetes][:master]
 node.reverse_merge!(
+  prometheus: {
+    exporter_proxy: {
+      listen: '0.0.0.0:9999', # to avoid conflict with calico node
+    },
+  },
   docker: {
     daemon_config: {
       'storage-driver' => 'btrfs',
@@ -28,8 +42,8 @@ node.reverse_merge!(
     # env_file: '/var/lib/vault-approle-keep/kubernetes',
     certs: {
       node: {
-        trust_pkis: %W(pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}/g1),
-        pki: "pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}/g1",
+        trust_pkis: %W(pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}/g#{node[:kubernetes][:pki_generations].fetch(:kubernetes, 1)}),
+        pki: "pki/k8s-#{node[:kubernetes].fetch(:cluster_name)}/g#{node[:kubernetes][:pki_generations].fetch(:kubernetes, 1)}",
         role: 'node',
         trust_ca_file: '/etc/ssl/self/k8s-node/trust.pem',
         ca_file: '/etc/ssl/self/k8s-node/ca.pem',
@@ -38,8 +52,8 @@ node.reverse_merge!(
         key_file: '/etc/ssl/self/k8s-node/key.pem',
         owner: 'root',
         group: 'root',
-        cn: "system:node:#{node[:hostname]}",
-        sans: ["system:node:#{node[:hostname]}"],
+        cn: "system:node:#{node[:kubernetes].fetch(:node_name)}",
+        sans: ["system:node:#{node[:kubernetes].fetch(:node_name)}"],
         units_to_reload: %w(kubelet.service),
         threshold_days: 7,
       },
@@ -48,6 +62,8 @@ node.reverse_merge!(
 )
 
 include_role 'base'
+include_role 'kubernetes::aws' if node[:hocho_ec2]
+
 include_role 'kubernetes::master' if node[:kubernetes][:master]
 
 include_cookbook 'ipvs'
@@ -55,19 +71,19 @@ include_cookbook 'targetcli'
 package 'open-iscsi'
 include_cookbook 'nfs'
 
-###
-# FIXME: Workaround for https://github.com/kubernetes/kubernetes/issues/94335
-remote_file '/etc/systemd/system/var-lib-kubelet.mount' do
-  owner 'root'
-  group 'root'
-  mode  '0644'
-  notifies :run, 'execute[systemctl daemon-reload]'
-end
+if node.dig(:docker, :daemon_config, 'storage-driver') == 'btrfs'
+  # FIXME: Workaround for https://github.com/kubernetes/kubernetes/issues/94335
+  remote_file '/etc/systemd/system/var-lib-kubelet.mount' do
+    owner 'root'
+    group 'root'
+    mode  '0644'
+    notifies :run, 'execute[systemctl daemon-reload]'
+  end
 
-service 'var-lib-kubelet.mount' do
-  action [:enable, :start]
+  service 'var-lib-kubelet.mount' do
+    action [:enable, :start]
+  end
 end
-###
 
 directory '/etc/kubernetes' do
   owner 'root'
@@ -95,7 +111,7 @@ include_cookbook 'vault-cert'
 
 ##
 
-include_role 'kubernetes::routing'
+include_role 'kubernetes::routing' if node[:kubernetes][:routing]
 include_role 'kubernetes::logging'
 
 ##
@@ -103,7 +119,7 @@ include_role 'kubernetes::logging'
 include_cookbook 'docker'
 package 'kubelet-bin'
 package 'kubectl-bin'
-package 'ebtables'
+package 'iptables'
 package 'ethtool'
 
 %w(
@@ -132,6 +148,12 @@ directory '/etc/kubernetes/kubelet' do
 end
 
 directory '/etc/kubernetes/manifests' do
+  owner 'root'
+  group 'root'
+  mode  '0755'
+end
+
+directory '/var/lib/kubelet' do
   owner 'root'
   group 'root'
   mode  '0755'
@@ -187,6 +209,12 @@ end
     force true
     to "/usr/lib/cni/#{_}"
   end
+end
+
+remote_file '/etc/systemd/network/10-aws-vpc-cni-k8s.link' do
+  owner 'root'
+  group 'root'
+  mode  '0644'
 end
 
 service 'kubelet.service' do

@@ -44,6 +44,11 @@ spec:
     - --service-cluster-ip-range=<%= node[:kubernetes].fetch(:service_cluster_ip_range) %>
     - --encryption-provider-config=/etc/kubernetes/apiserver/encryption.yaml
     - '--feature-gates=EphemeralContainers=true'
+<%- if node[:kubernetes][:external_cloud_provider] -%>
+    - '--cloud-provider=external'
+<%- elsif node[:kubernetes][:cloud_provider] -%>
+    - '--cloud-provider=<%= node[:kubernetes][:cloud_provider] %>'
+<%- end -%>
     image: k8s.gcr.io/kube-apiserver:v<%= node[:kubernetes].fetch(:version) %>
     imagePullPolicy: IfNotPresent
     livenessProbe:

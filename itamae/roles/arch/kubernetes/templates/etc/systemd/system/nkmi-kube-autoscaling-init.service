@@ -1,0 +1,13 @@
+# vim: ft=systemd
+[Unit]
+After=network.target network-online.target
+Before=machineidentity-bootstrap.service nkmi-vault-cert.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+ExecStart=/usr/bin/nkmi-kube-autoscaling-init
+
+[Install]
+WantedBy=multi-user.target
