@@ -16,7 +16,7 @@ ExecStart=/usr/bin/prometheus-node-exporter \
   --collector.<%= c %> \
 <%- end -%>
   --collector.textfile.directory /run/prometheus-node-exporter/textfile \
-  --collector.systemd.unit-whitelist "<%= node[:prometheus][:node_exporter][:systemd_unit_whitelist].join('|') %>"
+  --collector.systemd.unit-include "<%= node[:prometheus][:node_exporter][:systemd_unit_whitelist].join('|') %>"
 ExecReload=/bin/kill -HUP $MAINPID
 NoNewPrivileges=true
 ProtectHome=true
