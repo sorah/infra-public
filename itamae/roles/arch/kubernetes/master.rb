@@ -75,7 +75,7 @@ include_role 'kubernetes::etcd'
 
 node.reverse_merge!(
   kubernetes: {
-    version: '1.19.3',
+    version: '1.21.3',
     scheduler: {
       # topolvm: false
     },
