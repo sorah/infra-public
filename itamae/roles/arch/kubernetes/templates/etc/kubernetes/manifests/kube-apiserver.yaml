@@ -39,6 +39,9 @@ spec:
     - --tls-cert-file=/etc/ssl/self/k8s-apiserver/fullchain.pem
     - --tls-private-key-file=/etc/ssl/self/k8s-apiserver/key.pem
     - --service-account-key-file=/etc/kubernetes/apiserver/sa.pub
+<%- node[:kubernetes][:apiserver].fetch(:service_account_additional_public_key_files, []).each do |f| -%>
+    - --service-account-key-file=<%= f %>
+<%- end -%>
     - --service-account-signing-key-file=/etc/kubernetes/apiserver/sa.key
     - --service-account-issuer=<%= node[:kubernetes][:apiserver].fetch(:service_account_issuer) %>
     - --service-cluster-ip-range=<%= node[:kubernetes].fetch(:service_cluster_ip_range) %>
