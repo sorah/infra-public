@@ -2,7 +2,7 @@ node.reverse_merge!(
   prometheus: {
     tsdb: {
       path: '/mnt/vol/prometheus-data',
-      retention_time: '30d',
+      retention_time: '20d',
       min_block_duration: '2h',
       max_block_duration: '2h',
     },
