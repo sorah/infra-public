@@ -1,24 +1,22 @@
 # https://github.com/awslabs/amazon-eks-ami/blob/master/files/eni-max-pods.txt
-max_pods_per_node = case node[:hocho_ec2][:instance_type]
+max_ips_per_type = case node[:hocho_ec2][:instance_type]
                     when /^t3a?\.(?:nano|micro)$/
-                      4
-                    when 't3a.small'
-                      8
-                    when 't3.small'
-                      11
+                      2*2
+                    when /^t3a?\.(?:small)$/
+                      2*4
                     when /^t3a?\.(?:medium)$/
-                      17
+                      3*6
                     when /^t3a?\.(?:large)$/
-                      35
+                      3*12
                     when /^t3a?\.(?:2?xlarge)$/
-                      58
+                      4*15
                     else
-                      4
+                      2
                     end
 
 node.reverse_merge!(
   kubernetes: {
-    max_pods_per_node: max_pods_per_node,
+    max_pods_per_node: max_ips_per_type*8,
   },
 )
 

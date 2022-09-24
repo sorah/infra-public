@@ -9,23 +9,21 @@ puts "fqdn=#{fqdn}"
 system "sed", "-i", "-e", "s/__NODENAME__/#{fqdn}/g", "/etc/nkmi-vault-cert.json"
 
 
-max_pods_per_node = case instance_type
+max_ips_per_type = case node[:hocho_ec2][:instance_type]
                     when /^t3a?\.(?:nano|micro)$/
-                      4
-                    when 't3a.small'
-                      8
-                    when 't3.small'
-                      11
+                      2*2
+                    when /^t3a?\.(?:small)$/
+                      2*4
                     when /^t3a?\.(?:medium)$/
-                      17
+                      3*6
                     when /^t3a?\.(?:large)$/
-                      35
+                      3*12
                     when /^t3a?\.(?:2?xlarge)$/
-                      58
+                      4*15
                     else
-                      4
+                      2
                     end
-
+max_pods_per_node = max_ips_per_type*8
 
 puts "instance_type=#{instance_type},max_pods_per_node=#{max_pods_per_node}"
 system "sed", "-i", "-e", "s/^maxPods: .*$/maxPods: #{max_pods_per_node}/g", "/etc/kubernetes/kubelet/config.yaml"
