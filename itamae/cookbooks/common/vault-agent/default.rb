@@ -51,7 +51,8 @@ node.reverse_merge!(
   },
 ) if node[:vault][:agent][:listen_tcp]
 
-node.dig(:machineidentity, :units_to_reload)&.push('vault-agent.service')
+# FIXME: node.dig(:machineidentity, :units_to_reload)&.push('vault-agent.service')
+node.dig(:machineidentity, :units_to_restart)&.push('vault-agent.service')
 
 include_cookbook 'vault'
 
