@@ -1,4 +1,4 @@
-include_cookbook 'ox'
+include_cookbook 'nokogiri'
 %w(
   aws-sdk-ec2
   aws-sdk-s3
