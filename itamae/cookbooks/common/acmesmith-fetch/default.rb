@@ -3,7 +3,8 @@ node.reverse_merge!(
     common_names: {}, # owner: group:
     store_path: '/etc/ssl/self',
     aws_use_access_key: false,
-    aws_use_vault: !node[:hocho_ec2],
+    aws_use_vault: false,
+    aws_role_arn: 'app-acmesmith-fetch',
     s3_region: 'ap-northeast-1',
     s3_bucket: 'sorah-acmesmith',
     s3_prefix: 'private-prod/',
@@ -13,9 +14,18 @@ node.reverse_merge!(
   },
 )
 
-if node[:acmesmith_fetch][:aws_use_access_key] && !(node[:acmesmith_fetch][:aws_access_key_id] && node[:acmesmith_fetch][:aws_secret_access_key])
+case
+when node[:acmesmith_fetch][:aws_use_access_key] && !(node[:acmesmith_fetch][:aws_access_key_id] && node[:acmesmith_fetch][:aws_secret_access_key])
   node[:acmesmith_fetch][:aws_access_key_id] = node[:secrets][:'aws.acmesmith-fetch.id']
   node[:acmesmith_fetch][:aws_secret_access_key] = node[:secrets][:'aws.acmesmith-fetch.key']
+when node[:acmesmith_fetch][:aws_use_vault]
+  # do nothing
+when !node[:hocho_ec2]
+  include_cookbook 'needroleshere'
+  needroleshere_binding 'nkmi-acmesmith-fetch' do
+    mode 'ecs-relative-query'
+    role_arn node[:acmesmith_fetch].fetch(:aws_role_arn)
+  end
 end
 
 include_cookbook 'prometheus-textfile-certificate'
@@ -43,11 +53,12 @@ remote_file '/etc/systemd/system/nkmi-acmesmith-fetch.timer' do
 end
 
 execute "nkmi-acmesmith-fetch" do
+  command 'systemctl start nkmi-acmesmith-fetch.service'
   action :nothing
 end
 
 file '/etc/nkmi-acmesmith-fetch.json' do
-  content "#{node[:acmesmith_fetch].to_json}\n"
+  content "#{JSON.pretty_generate(node[:acmesmith_fetch])}\n"
   owner 'root'
   group 'root'
   mode  '0600'
