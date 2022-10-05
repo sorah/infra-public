@@ -35,6 +35,8 @@ include_recipe './blackbox.rb'
 
 include_recipe './auth.rb'
 
+include_recipe './mackerel.rb' if node[:base][:mackerel_agent]
+
 include_role 'prometheus::custom'
 
 directory '/mnt/vol/prometheus-data' do
