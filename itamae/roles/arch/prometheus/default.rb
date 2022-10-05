@@ -6,12 +6,26 @@ node.reverse_merge!(
       min_block_duration: '2h',
       max_block_duration: '2h',
     },
+    grafana: true, # XXX:
   },
 )
 
 include_role 'prometheus::config'
 
 include_role 'base'
+
+unless node[:hocho_ec2]
+  include_cookbook 'needroleshere'
+  needroleshere_binding 'thanos-sidecar' do
+    mode 'ecs-relative'
+    role_arn 'ec2-prometheus'
+  end
+  needroleshere_binding 'grafana' do
+    mode 'ecs-full'
+    role_arn 'ec2-prometheus'
+  end
+end
+
 include_cookbook 'mnt-vol'
 include_cookbook 'prometheus'
 
@@ -48,4 +62,4 @@ service 'prometheus.service' do
   action [:enable, :start]
 end
 
-include_role 'grafana' # XXX:
+include_role 'grafana' if node[:prometheus][:grafana] # XXX:
