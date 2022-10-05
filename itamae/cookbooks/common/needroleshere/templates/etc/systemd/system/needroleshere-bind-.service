@@ -1,0 +1,53 @@
+[Unit]
+Description=Needroleshere role binding for <%= @name %>
+Documentation=https://github.com/sorah/needroleshere
+
+PartOf=<%= @name %>.service
+Before=<%= @name %>.service
+After=needroleshere.socket needroleshere-ecs-relative.socket needroleshere-dir.service
+Wants=needroleshere.socket needroleshere-ecs-relative.socket needroleshere-dir.service
+
+[Service]
+Type=oneshot
+
+RemainAfterExit=yes
+
+ExecStart=/usr/bin/needroleshere bind <%= @name %> \
+  --mode <%= @mode %> \
+  --role-arn <%= @role_arn %> \
+  --trust-anchor-arn <%= @trust_anchor_arn %> \
+  --profile-arn <%= @profile_arn %> \
+  --private-key <%= @private_key_path %> \
+<%- @certificate_path.each do |cert| -%>
+  --certificate <%= cert %> \
+<%- end -%>
+  --url http://127.0.0.1:7224 \
+  --no-validate
+
+ExecStop=/usr/bin/needroleshere unbind <%= @name %>
+
+Environment=RUNTIME_DIRECTORY=/run/needroleshere
+
+DynamicUser=yes
+User=needroleshere
+Group=machineidentity
+
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+ProtectSystem=full
+ProtectClock=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+
+PrivateTmp=yes
+
+[Install]
+WantedBy=<%= @name %>.service
