@@ -7,6 +7,8 @@ if node.dig(:prometheus, :exporter_proxy)
   node[:prometheus][:exporter_proxy][:exporters][:fluentd] = {path: '/fluentd/metrics', url: 'http://localhost:24231/metrics'}
 end
 
+include_cookbook 'base-devel'
+
 gem_package 'fluentd'
 gem_package 'fluent-plugin-prometheus'
 gem_package 'oj'
