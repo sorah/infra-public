@@ -104,6 +104,7 @@ end
 
 need_bootstrap = !run_command("test -e /var/lib/machineidentity/identity.crt -a ! -e /var/lib/machineidentity/force-bootstrap", error: false).success?
 need_bootstrap ||= run_command(%(ruby -ropenssl -e 'puts OpenSSL::X509::Certificate.new(ARGF.read).extensions.select {|_| _.oid == "subjectAltName" }.flat_map {|_| _.value.split(/, */).grep(/^DNS:/).map {|s| s[4..-1] } }.sort.join(?,)' /var/lib/machineidentity/identity.crt), error: false).stdout.chomp != (node[:hocho_jwt][:payload][:sans] || []).sort.join(?,)
+need_bootstrap ||= run_command(%(ruby -ropenssl -e 'puts OpenSSL::X509::Certificate.new(ARGF.read).not_after < Time.now ? 1 : 0' /var/lib/machineidentity/identity.crt), error: false).stdout.chomp == '1'
 
 if need_bootstrap && !node[:packer] && node[:machineidentity][:token]
   p node.hocho_jwt.payload
