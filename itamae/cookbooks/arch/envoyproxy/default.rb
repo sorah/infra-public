@@ -17,6 +17,12 @@ directory '/etc/envoyproxy' do
   mode  '0755'
 end
 
+directory '/var/log/envoyproxy' do
+  owner 'http'
+  group 'http'
+  mode  '0755'
+end
+
 template '/etc/systemd/system/envoyproxy@.service' do
   owner 'root'
   group 'root'

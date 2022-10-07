@@ -30,3 +30,5 @@ end
 service 'grafana' do
   action [:enable, :start]
 end
+
+include_role 'grafana::envoy_sidecar'
