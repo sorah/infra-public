@@ -1,0 +1,93 @@
+#!/usr/bin/env ruby
+require_relative '../lib/netbox_data_exporter'
+require 'aws-sdk-s3'
+require 'fileutils'
+require 'logger'
+require 'pg'
+
+NetboxClientRuby.configure do  |config|
+  config.netbox.auth.token = ENV.fetch('NETBOX_TOKEN')
+  config.netbox.api_base_url = ENV.fetch('NETBOX_URL')
+  config.netbox.pagination.default_limit = 1000
+  config.netbox.pagination.max_limit = 1000
+end
+
+device_data = Source.devices.each_value.map do |dev|
+  DeviceData.new(dev, Source)
+end
+vm_data = Source.virtual_machines.each_value.map do |vm|
+  DeviceData.new(vm, Source, vm: true)
+end
+host_data = [*device_data,*vm_data]
+
+address_data = Source.ip_addresses.each_value.map do |ip|
+  AddressData.new(ip, Source)
+end
+
+
+####
+
+
+kea_hosts_job = KeaHostsJob.new(host_data, address_data)
+
+####
+
+files = {}
+
+files.merge! DnsJob.new(host_data, address_data).files
+files.merge! PrometheusJob.new(host_data).files
+files.merge! kea_hosts_job.files
+
+destdir = ENV['DESTDIR'] || './out'
+if !destdir.empty?
+  FileUtils.mkdir_p destdir
+  files.each do |name, content|
+    dest = File.join(destdir, name)
+    FileUtils.mkdir_p File.dirname(dest)
+    File.write dest, content
+  end
+end
+
+s3_region, s3_bucket, s3_prefix = ENV['S3_REGION'], ENV['S3_BUCKET'], ENV['S3_PREFIX']
+if s3_region && s3_bucket && s3_prefix
+  s3 = Aws::S3::Client.new(region: s3_region, logger: Logger.new($stdout))
+  files.each do |name, content|
+    s3.put_object(
+      bucket: s3_bucket,
+      key: "#{s3_prefix}#{name}",
+      body: content,
+    )
+  end
+end
+
+#####
+
+if ENV['KEA_HOSTS_DATABASE_NAME'] && ENV['KEA_HOSTS_DATABASE_USER']
+  begin
+    kea_pg = PG::Connection.open(
+      dbname: ENV.fetch('KEA_HOSTS_DATABASE_NAME'),
+      host: ENV['KEA_HOSTS_DATABASE_HOST'],
+      port: ENV['KEA_HOSTS_DATABASE_PORT'],
+      user: ENV['KEA_HOSTS_DATABASE_USER'],
+      password: ENV['KEA_HOSTS_DATABASE_PASSWORD'],
+    )
+
+    kea_pg.transaction do
+      kea_pg.exec('DELETE FROM hosts')
+      kea_hosts_job.result.each do |record|
+        kea_pg.exec_params(
+          'INSERT INTO hosts (host_id, dhcp_identifier, dhcp_identifier_type, ipv4_address, dhcp4_subnet_id) VALUES ($1::int, $2, $3::int, $4::bigint, $5::bigint)',
+          [
+            record.host_id,
+            PG::TextEncoder::Bytea.new.encode(record.dhcp_identifier),
+            record.dhcp_identifier_type,
+            record.ipv4_address,
+            record.dhcp4_subnet_id,
+          ],
+        )
+      end
+    end
+  ensure
+    kea_pg&.close
+  end
+end

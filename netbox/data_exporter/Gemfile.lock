@@ -1,0 +1,77 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    aws-eventstream (1.2.0)
+    aws-partitions (1.563.0)
+    aws-sdk-core (3.128.0)
+      aws-eventstream (~> 1, >= 1.0.2)
+      aws-partitions (~> 1, >= 1.525.0)
+      aws-sigv4 (~> 1.1)
+      jmespath (~> 1.0)
+    aws-sdk-kms (1.55.0)
+      aws-sdk-core (~> 3, >= 3.127.0)
+      aws-sigv4 (~> 1.1)
+    aws-sdk-s3 (1.113.0)
+      aws-sdk-core (~> 3, >= 3.127.0)
+      aws-sdk-kms (~> 1)
+      aws-sigv4 (~> 1.4)
+    aws-sigv4 (1.4.0)
+      aws-eventstream (~> 1, >= 1.0.2)
+    concurrent-ruby (1.1.9)
+    diff-lcs (1.5.0)
+    dry-configurable (0.13.0)
+      concurrent-ruby (~> 1.0)
+      dry-core (~> 0.6)
+    dry-core (0.7.1)
+      concurrent-ruby (~> 1.0)
+    faraday (0.17.5)
+      multipart-post (>= 1.2, < 3)
+    faraday-detailed_logger (2.5.0)
+      faraday (>= 0.16, < 3)
+    faraday_middleware (0.14.0)
+      faraday (>= 0.7.4, < 1.0)
+    ipaddr (1.2.4)
+    ipaddress (0.8.3)
+    jmespath (1.6.0)
+    mini_portile2 (2.8.0)
+    multipart-post (2.1.1)
+    netbox-client-ruby (0.6.0)
+      dry-configurable (~> 0.13.0)
+      faraday (~> 0.11, >= 0.11.0)
+      faraday-detailed_logger (~> 2.1)
+      faraday_middleware (~> 0.11)
+      ipaddress (~> 0.8, >= 0.8.3)
+      openssl (~> 2.0, >= 2.0.5)
+    nokogiri (1.13.3)
+      mini_portile2 (~> 2.8.0)
+      racc (~> 1.4)
+    openssl (2.2.1)
+      ipaddr
+    pg (1.3.3)
+    racc (1.6.0)
+    rspec (3.11.0)
+      rspec-core (~> 3.11.0)
+      rspec-expectations (~> 3.11.0)
+      rspec-mocks (~> 3.11.0)
+    rspec-core (3.11.0)
+      rspec-support (~> 3.11.0)
+    rspec-expectations (3.11.0)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.11.0)
+    rspec-mocks (3.11.0)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.11.0)
+    rspec-support (3.11.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  aws-sdk-s3
+  netbox-client-ruby
+  nokogiri
+  pg
+  rspec
+
+BUNDLED WITH
+   2.2.6

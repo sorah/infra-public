@@ -1,0 +1,10 @@
+source 'https://rubygems.org'
+
+gem 'netbox-client-ruby'
+gem 'aws-sdk-s3'
+gem 'nokogiri'
+gem 'pg'
+
+group :development, :test do
+  gem 'rspec'
+end
