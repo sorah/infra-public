@@ -49,12 +49,28 @@ end
       binds.push(*%w(/usr/portage /opt/sorah-overlay)).uniq!
     end
   end
+
   template "/etc/systemd/nspawn/#{name}.nspawn" do
     source 'templates/etc/systemd/nspawn/template.nspawn'
     owner 'root'
     group 'root'
     mode  '0644'
     variables machine: spec, name: name
+  end
+
+  directory "/etc/systemd/system/systemd-nspawn@#{name}.service.d" do
+    owner 'root'
+    group 'root'
+    mode  '0755'
+  end
+
+  template "/etc/systemd/system/systemd-nspawn@#{name}.service.d/override.conf" do
+    source 'templates/etc/systemd/system/systemd-nspawn@.service.d/override.conf'
+    owner 'root'
+    group 'root'
+    mode  '0644'
+    notifies :run, 'execute[systemctl daemon-reload]'
+    variables service: spec[:_service] || {}, name: name
   end
 
   service "systemd-nspawn@#{name}" do

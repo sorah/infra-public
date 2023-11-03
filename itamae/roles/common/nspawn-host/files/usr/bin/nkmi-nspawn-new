@@ -8,7 +8,7 @@ set -e
 
 cd /var/lib/machines
 mkdir $NAME
-pacstrap $NAME base rsync sudo openssh
+pacstrap $NAME base rsync sudo openssh vim
 vim $NAME/etc/systemd/network/10-host0.network
 echo $NAME > $NAME/etc/hostname
 mkdir -p $NAME/root/.ssh
@@ -16,6 +16,9 @@ curl -o $NAME/root/.ssh/authorized_keys https://sorah.jp/ssh-key.txt
 chown root:root $NAME/root/.ssh
 chmod 700 $NAME/root/.ssh
 chmod 600 $NAME/root/.ssh/authorized_keys
+echo "LANG=en_US.UTF-8" > $NAME/etc/locale.conf
+echo "en_US.UTF-8 UTF-8" > $NAME/etc/locale.gen
+arch-chroot $NAME locale-gen
 arch-chroot $NAME systemctl enable sshd systemd-networkd systemd-resolved
 rm $NAME/etc/resolv.conf
 ln -s /run/systemd/resolve/resolv.conf $NAME/etc/resolv.conf
