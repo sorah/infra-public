@@ -1,4 +1,4 @@
-include_cookbook 'apt-source-nkmideb'
+include_cookbook 'apt-source-sorah-rbpkg'
 
 package "ruby" do
 end
