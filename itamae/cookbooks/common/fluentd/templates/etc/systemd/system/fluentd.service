@@ -1,0 +1,21 @@
+[Unit]
+Description=fluentd - a data collector
+Documentation=https://docs.fluentd.org
+After=network.target
+
+#<% executable = { arch: '/usr/bin/fluentd' }.fetch(node[:distro], '/usr/local/bin/fluentd') %>
+
+[Service]
+Type=simple
+User=fluentd
+Group=fluentd
+LimitNOFILE=65536
+StateDirectory=fluentd
+ExecStartPre=/usr/bin/ruby <%= executable %> -q -c <%= node[:fluentd].fetch(:config_path) %> -p /usr/share/fluentd/plugins --dry-run 
+ExecStart=/usr/bin/ruby <%= executable %> -c <%= node[:fluentd].fetch(:config_path) %> -p /usr/share/fluentd/plugins
+ExecReload=/bin/kill -HUP $MAINPID
+TimeoutStopSec=120
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

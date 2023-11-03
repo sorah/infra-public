@@ -5,7 +5,7 @@ node.reverse_merge!(
 )
 
 include_cookbook 'step'
-package 'step-ca-bin'
+include_cookbook 'step-ca::package'
 
 user 'step-ca' do
   system_user true

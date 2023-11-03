@@ -6,8 +6,8 @@ node.reverse_merge!(
       address: ":443",
       root: [],
       federatedRoots: [],
-      # crt: nil,
-      # key: nil,
+      crt: "/mnt/vol/step-ca/ca/ca.pem",
+      key: "/mnt/vol/step-ca/ca/key.pem",
       dnsNames: [],
       logger: {
         format: 'json',
@@ -15,6 +15,7 @@ node.reverse_merge!(
       db: {
         type: "badger",
         dataSource: "/mnt/vol/step-ca/db",
+        badgerValueLogLoadingMode: 'FileIO',
       },
       authority: {
         provisioners: [],
@@ -23,9 +24,13 @@ node.reverse_merge!(
         cipherSuites: %w(
           TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
           TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+          TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+          TLS_AES_128_GCM_SHA256
+          TLS_AES_256_GCM_SHA384
+          TLS_CHACHA20_POLY1305_SHA256
         ),
         minVersion: 1.2,
-        maxVersion: 1.2,
+        maxVersion: 1.3,
         renegotiation: false,
       },
     },
@@ -33,8 +38,9 @@ node.reverse_merge!(
 )
 
 include_role 'base'
-include_cookbook 'step-ca'
+include_cookbook 'step'
 
+include_cookbook 'step-ca'
 include_role 'step-ca::logging'
 
 directory '/mnt/vol/step-ca' do
