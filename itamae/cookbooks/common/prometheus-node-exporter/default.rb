@@ -37,6 +37,10 @@ node.reverse_merge!(
 
 package 'prometheus-node-exporter'
 
+user 'node_exporter' do
+  system_user true
+end
+
 directory '/var/lib/prometheus-node-exporter' do
   owner 'root'
   group 'root'

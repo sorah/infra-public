@@ -5,9 +5,8 @@ Wants=network.target
 
 [Service]
 Type=simple
-User=nobody
-Group=nogroup
-MemoryLimit=50M
+DynamicUser=true
+MemoryMax=50M
 Restart=always
 RestartSec=6s
 ExecStart=/opt/exporter_proxy -config /etc/exporter_proxy.yml
