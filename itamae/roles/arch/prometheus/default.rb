@@ -24,6 +24,10 @@ unless node[:hocho_ec2]
     mode 'ecs-full'
     role_arn 'ec2-prometheus'
   end
+  needroleshere_binding 'prometheus' do
+    mode 'ecs-full'
+    role_arn 'ec2-prometheus'
+  end
 end
 
 include_cookbook 'mnt-vol'
